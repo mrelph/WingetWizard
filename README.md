@@ -16,11 +16,14 @@ WingetWizard is a beautifully designed, AI-powered Windows package manager featu
 ### 🤖 AI-Powered Features
 - **Enhanced AI Prompting**: Comprehensive 7-section structured analysis with intelligent formatting
 - **Rich Markdown Reports**: Color-coded recommendations with emoji indicators and professional styling
+- **Persistent AI Reports**: Individual package reports automatically saved with clickable status column links
+- **Status Column Integration**: "📄 View Report" links in status column for instant access to saved reports
 - **Dual AI Providers**: Claude AI (knowledge-based) and Perplexity (real-time web research)
 - **Security Assessment**: Vulnerability analysis with risk level indicators (🟢🟡🔴🟣)
 - **Multiple AI Models**: Claude Sonnet 4, 3.5 Sonnet, 3.5 Haiku, 3 Opus
 - **Intelligent Export**: Professional markdown reports with metadata and executive summaries
 - **Progress Tracking**: Spinning icon progress indicators with real-time status updates
+- **Report Management**: Automatic AI_Reports directory creation with timestamped files
 
 ### 🔒 Security Features
 - **Command Injection Protection**: Validated winget command execution
@@ -47,6 +50,8 @@ WingetWizard is a beautifully designed, AI-powered Windows package manager featu
 - **Spinning Progress**: Animated logo indicators centered on main window during operations
 - **Rich Text Displays**: Color-coded help dialogs and AI reports with visual hierarchy
 - **Intelligent Layout**: Hidden logs panel by default, larger fonts, and generous spacing
+- **Responsive Columns**: Auto-sizing columns that adapt proportionally to window changes
+- **Smart Tooltips**: Helpful tooltips for all buttons when window is scaled down
 
 ## 🎨 User Experience Highlights
 
@@ -134,7 +139,10 @@ WingetWizard is a beautifully designed, AI-powered Windows package manager featu
 3. **AI Analysis**: Click "🤖 AI Research" for comprehensive 7-section analysis
 4. **Rich Reports**: Review color-coded reports with emoji indicators and visual hierarchy
 5. **Professional Export**: Save beautifully formatted markdown reports with metadata
-6. **Executive Summary**: Get recommendation counts and professional formatting
+6. **Individual Reports**: Automatic saving of individual package reports in AI_Reports directory
+7. **Status Links**: Click "📄 View Report" in status column to instantly open saved reports
+8. **Executive Summary**: Get recommendation counts and professional formatting
+9. **Persistent Access**: Reports remain accessible even after closing the application
 
 ### 📤 Export & Configuration
 - **📤 Export**: Save package lists and AI research to validated file paths
@@ -178,6 +186,10 @@ UpgradeApp/
 ├── UpgradeBot.cs          # Main application with security enhancements
 ├── UpgradeApp.csproj      # Project configuration
 ├── settings.json          # Secure user settings (auto-generated)
+├── AI_Reports/            # Individual AI research reports (auto-generated)
+│   ├── PackageName1_YYYYMMDD_HHMMSS.md
+│   ├── PackageName2_YYYYMMDD_HHMMSS.md
+│   └── ...
 ├── installer.wxs          # WiX installer configuration
 └── README.md             # This documentation
 ```

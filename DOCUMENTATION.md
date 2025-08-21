@@ -28,6 +28,7 @@ WingetWizard is a beautifully designed, Claude-inspired Windows desktop applicat
 │  Business Logic Layer                                      │
 │  ├── Package Management (Winget Integration)               │
 │  ├── AI Research Engine (Claude + Perplexity)              │
+│  ├── AI Report Management (Persistent Storage & Links)     │
 │  ├── Export System (Markdown + Text)                       │
 │  └── Logging Framework (Verbose + Error Tracking)          │
 ├─────────────────────────────────────────────────────────────┤
@@ -125,6 +126,8 @@ public class SpinningProgressForm : Form
 - **Hidden-by-Default Logs**: Cleaner interface with collapsible detailed logging panel
 - **Smart Containers**: Improved panel backgrounds and splitter styling
 - **Button Organization**: Card-like design with sophisticated interaction states
+- **Auto-Sizing Columns**: Proportional column resizing that adapts to window changes
+- **Smart Tooltips**: Contextual tooltips for buttons when window is scaled down
 
 ## 📊 Features
 
@@ -142,6 +145,9 @@ public class SpinningProgressForm : Form
 ### 🤖 Enhanced AI-Powered Features
 - 🧠 **Enhanced AI Prompting**: Comprehensive structured prompts with specific formatting instructions and emoji indicators
 - 📊 **Rich Visual Reports**: Color-coded analysis with professional markdown formatting and visual hierarchy
+- 📄 **Persistent AI Reports**: Individual package reports automatically saved with timestamped filenames in AI_Reports directory
+- 🔗 **Status Column Integration**: Clickable "📄 View Report" links in status column for instant access to saved reports
+- 📁 **Report Management**: Automatic creation of AI_Reports directory with organized file storage
 - 🎯 **7-Section Analysis Framework**:
   - 🎯 **Executive Summary** with recommendation indicators (🟢🟡🔴)
   - 🔄 **Version Changes** with update type classification
@@ -155,6 +161,7 @@ public class SpinningProgressForm : Form
 - 🎨 **Visual Indicators**: Emoji-based risk levels and recommendation types throughout interface
 - 📈 **Progress Tracking**: Spinning logo indicators with real-time package analysis status
 - 💾 **Rich Text Display**: Color-coded reports with sophisticated typography and formatting
+- 🔄 **Persistent Access**: Reports remain accessible even after closing and reopening the application
 
 ### 📤 Enhanced Export & Logging
 - 📤 **Professional Export System**: Auto-generated filenames with timestamps and package counts
@@ -222,6 +229,10 @@ UpgradeApp/
 ├── UpgradeApp.csproj       # Project configuration
 ├── config.json             # API keys and configuration
 ├── settings.json           # User preferences (auto-generated)
+├── AI_Reports/             # Individual AI research reports (auto-generated)
+│   ├── PackageName1_YYYYMMDD_HHMMSS.md
+│   ├── PackageName2_YYYYMMDD_HHMMSS.md
+│   └── ...
 ├── README.md               # Basic project information
 ├── DOCUMENTATION.md        # This comprehensive guide
 ├── .gitignore             # Git exclusion rules
@@ -265,6 +276,8 @@ The application builds to a single executable file containing all dependencies:
 - **Notification System**: Desktop alerts for critical updates
 - **Batch Processing**: Command-line interface for automation
 - **Integration APIs**: REST endpoints for external system integration
+- **Report Analytics**: Dashboard for AI report insights and trends
+- **Advanced Search**: Full-text search across saved AI reports
 
 ### Technical Improvements
 - **Caching System**: Local storage for AI recommendations
