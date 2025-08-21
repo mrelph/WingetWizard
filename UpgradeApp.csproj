@@ -6,24 +6,28 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <PublishReadyToRun>true</PublishReadyToRun>
     <ApplicationIcon>Logo.ico</ApplicationIcon>
-    <AssemblyTitle>WingetWizard</AssemblyTitle>
-    <AssemblyDescription>AI-Enhanced Windows Package Manager</AssemblyDescription>
+    <AssemblyTitle>WingetWizard - AI-Enhanced Package Manager</AssemblyTitle>
+    <AssemblyDescription>Modern Windows package management with AI-powered recommendations</AssemblyDescription>
     <AssemblyCompany>GeekSuave Labs</AssemblyCompany>
     <AssemblyProduct>WingetWizard</AssemblyProduct>
-    <AssemblyCopyright>Copyright © 2024 Mark Relph, GeekSuave Labs. All rights reserved.</AssemblyCopyright>
+    <AssemblyCopyright>Copyright © 2024 Mark Relph</AssemblyCopyright>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <FileVersion>2.0.0.0</FileVersion>
+    <Version>2.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="config.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Logo.ico" />
+    <Content Include="Logo.png" />
+    <Content Include="config.json" />
+    <Content Include="README.md" />
+    <Content Include="DOCUMENTATION.md" />
+    <Content Include="DEPLOYMENT.txt" />
   </ItemGroup>
 
 </Project>

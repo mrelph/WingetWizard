@@ -14,15 +14,16 @@ WingetWizard is a beautifully designed, AI-powered Windows package manager featu
 - **🔧 Repair Selected**: Fix corrupted or problematic installations
 
 ### 🤖 AI-Powered Features
-- **Enhanced AI Prompting**: Comprehensive 7-section structured analysis with intelligent formatting
+- **Comprehensive Application Analysis**: Full software overview including purpose, developer, features, and use cases
+- **Enhanced AI Prompting**: Two-stage process with Perplexity research and Claude formatting
 - **Rich Markdown Reports**: Color-coded recommendations with emoji indicators and professional styling
 - **Persistent AI Reports**: Individual package reports automatically saved with clickable status column links
 - **Status Column Integration**: "📄 View Report" links in status column for instant access to saved reports
-- **Dual AI Providers**: Claude AI (knowledge-based) and Perplexity (real-time web research)
+- **Dual AI Providers**: Perplexity (real-time web research) + Claude (professional formatting)
 - **Security Assessment**: Vulnerability analysis with risk level indicators (🟢🟡🔴🟣)
-- **Multiple AI Models**: Claude Sonnet 4, 3.5 Sonnet, 3.5 Haiku, 3 Opus
+- **Multiple AI Models**: Claude Sonnet 4, 3.5 Sonnet, 3.5 Haiku support
 - **Intelligent Export**: Professional markdown reports with metadata and executive summaries
-- **Progress Tracking**: Spinning icon progress indicators with real-time status updates
+- **Modern Progress Tracking**: Sleek in-UI progress bar with real-time status updates
 - **Report Management**: Automatic AI_Reports directory creation with timestamped files
 
 ### 🔒 Security Features
@@ -40,15 +41,17 @@ WingetWizard is a beautifully designed, AI-powered Windows package manager featu
 - **Real-time Updates**: Comprehensive operation tracking with modern green terminal styling
 - **Enhanced Help System**: Rich text help dialogs with colors, emojis, and better typography
 
-### 🎨 Modern Claude-Inspired Interface
-- **Sophisticated Design**: Claude AI-inspired dark theme with refined color palette
-- **Welcome Experience**: Personalized time-based greetings ("Good evening, Mark")
-- **Smart Welcome Cards**: Interactive action suggestions when no packages are loaded
+### 🎨 Native Windows Theme Integration
+- **OS Theme Respect**: Automatically detects and adapts to Windows dark/light mode settings
+- **Dark Mode Window Chrome**: Native dark title bar, minimize/maximize/close buttons
+- **Complete Theme Coverage**: All dialogs, controls, and UI elements respect OS theme
+- **Welcome Experience**: Personalized time-based greetings with theme-appropriate colors
+- **Smart Welcome Cards**: Interactive action suggestions with adaptive theming
 - **Modern Typography**: Calibri font with intelligent fallbacks for enhanced readability
-- **Card-Based Buttons**: Elegant spacing and subtle borders with sophisticated hover effects
-- **Professional Colors**: Carefully curated color scheme with blues, purples, oranges, and greens
-- **Spinning Progress**: Animated logo indicators centered on main window during operations
-- **Rich Text Displays**: Color-coded help dialogs and AI reports with visual hierarchy
+- **Card-Based Buttons**: Elegant spacing and theme-aware hover effects
+- **Professional Colors**: Dynamic color scheme that adapts to light/dark modes
+- **Minimal Progress Indicator**: Sleek in-UI progress bar with theme-appropriate colors
+- **Rich Text Displays**: Theme-aware help dialogs and AI reports with proper contrast
 - **Intelligent Layout**: Hidden logs panel by default, larger fonts, and generous spacing
 - **Responsive Columns**: Auto-sizing columns that adapt proportionally to window changes
 - **Smart Tooltips**: Helpful tooltips for all buttons when window is scaled down
@@ -56,32 +59,36 @@ WingetWizard is a beautifully designed, AI-powered Windows package manager featu
 ## 🎨 User Experience Highlights
 
 ### 🌟 **Welcome Experience**
-- **Personalized Greeting**: Time-aware welcome message with user's name
-- **Action Cards**: Four elegant suggestion cards for common operations
+- **Personalized Greeting**: Time-aware welcome message with theme-appropriate colors
+- **Action Cards**: Five elegant suggestion cards with adaptive theming
 - **Smart Visibility**: Welcome screen appears when empty, hides when packages load
-- **Professional Aesthetics**: Claude AI-inspired design language throughout
+- **Native Aesthetics**: Fully integrated Windows design language with OS theme respect
 
 ### 🎯 **Modern Interactions**
-- **Spinning Progress**: Animated logo indicators that center perfectly on the main window
-- **Rich Text Reports**: Color-coded AI analysis with emoji indicators and visual hierarchy
-- **Sophisticated Colors**: Professional palette with semantic color coding
-- **Enhanced Typography**: Modern Calibri font with improved readability
+- **Native Theme Integration**: Seamless adaptation to Windows dark/light mode preferences
+- **In-UI Progress**: Minimal progress bar with theme-appropriate colors (no modal popups)
+- **Rich Text Reports**: Theme-aware AI analysis with proper contrast and visual hierarchy
+- **Dynamic Colors**: Professional palette that adapts to OS theme settings
+- **Enhanced Typography**: Modern Calibri font with theme-appropriate contrast
 
 ### 📱 **Responsive Design**
 - **Adaptive Layout**: Intelligent spacing and sizing for different screen sizes
-- **Hidden-by-Default Logs**: Cleaner interface with collapsible detailed logging
-- **Card-Based Actions**: Buttons with sophisticated hover effects and spacing
-- **Professional Help**: Rich text help system with colors, emojis, and structure
+- **Theme-Aware Interface**: All elements adapt to OS dark/light mode settings
+- **Hidden-by-Default Logs**: Cleaner interface with theme-appropriate collapsible logging
+- **Card-Based Actions**: Buttons with theme-aware hover effects and spacing
+- **Professional Help**: Rich text help system with OS theme integration
 
 ## 🛠️ Technical Stack
 
-- **Framework**: .NET 6 Windows Forms with modern UI enhancements
+- **Framework**: .NET 6 Windows Forms with native OS theme integration
+- **Architecture**: Modular service-based architecture with dependency injection
 - **Typography**: Calibri font family with intelligent fallback system  
-- **Design Language**: Claude AI-inspired interface with sophisticated color palette
-- **AI Integration**: Enhanced prompting with structured 7-section analysis
-- **Progress Indicators**: Custom spinning form with animated logo and status updates
-- **Rich Text Rendering**: Color-coded markdown display with emoji support
-- **Architecture**: Single-file executable with self-contained deployment
+- **Design Language**: Native Windows interface with full OS theme respect
+- **Theme System**: Windows API integration for dark mode window chrome
+- **AI Integration**: Two-stage prompting with comprehensive application analysis
+- **Progress Indicators**: Minimal in-UI progress bar with theme-appropriate colors
+- **Rich Text Rendering**: Theme-aware markdown display with proper contrast
+- **Deployment**: Single-file executable with self-contained deployment
 - **Security**: Thread-safe operations, input validation, secure storage
 
 ## 📋 Requirements
@@ -118,13 +125,13 @@ WingetWizard is a beautifully designed, AI-powered Windows package manager featu
 ## 📖 Usage
 
 ### 🌟 **Getting Started Experience**
-1. **Welcome Screen**: Greeted with personalized time-based message and action cards
-2. **Quick Actions**: Click suggestion cards or use toolbar buttons to begin
-3. **Smart Interface**: Logs hidden by default for clean, focused experience
-4. **Progress Feedback**: Enjoy spinning logo animations during operations
+1. **Welcome Screen**: Greeted with personalized message in your OS theme colors
+2. **Quick Actions**: Click theme-aware suggestion cards or use toolbar buttons
+3. **Smart Interface**: Logs hidden by default with native theme integration
+4. **Progress Feedback**: Theme-appropriate progress bar shows operation status
 
 ### 📦 **Package Operations**
-1. **🔄 Check Updates**: Scan for available package updates with animated progress
+1. **🔄 Check Updates**: Scan for available package updates with sleek progress indicator
 2. **📋 List All Apps**: View complete software inventory in modern interface  
 3. **Select Packages**: Use checkboxes to select multiple packages for batch operations
 4. **📦 Upgrade Selected**: Update only checked packages with real-time status
@@ -134,15 +141,16 @@ WingetWizard is a beautifully designed, AI-powered Windows package manager featu
 8. **🔧 Repair Selected**: Fix corrupted installations with detailed logging
 
 ### 🤖 **Enhanced AI Research Workflow**
-1. **Check Updates**: Populate the upgrade list with spinning progress indicator
+1. **Check Updates**: Populate the upgrade list with sleek progress indicator
 2. **Select Packages**: Choose packages using improved checkboxes in modern interface
-3. **AI Analysis**: Click "🤖 AI Research" for comprehensive 7-section analysis
-4. **Rich Reports**: Review color-coded reports with emoji indicators and visual hierarchy
-5. **Professional Export**: Save beautifully formatted markdown reports with metadata
-6. **Individual Reports**: Automatic saving of individual package reports in AI_Reports directory
-7. **Status Links**: Click "📄 View Report" in status column to instantly open saved reports
-8. **Executive Summary**: Get recommendation counts and professional formatting
-9. **Persistent Access**: Reports remain accessible even after closing the application
+3. **AI Analysis**: Click "🤖 AI Research" for comprehensive application and upgrade analysis
+4. **Two-Stage Process**: Perplexity researches facts, Claude formats professional reports
+5. **Rich Reports**: Review color-coded reports with emoji indicators and visual hierarchy
+6. **Professional Export**: Save beautifully formatted markdown reports with metadata
+7. **Individual Reports**: Automatic saving of individual package reports in AI_Reports directory
+8. **Status Links**: Click "📄 View Report" in status column to instantly open saved reports
+9. **Executive Summary**: Get recommendation counts and professional formatting
+10. **Persistent Access**: Reports remain accessible even after closing the application
 
 ### 📤 Export & Configuration
 - **📤 Export**: Save package lists and AI research to validated file paths
@@ -183,7 +191,18 @@ WingetWizard is a beautifully designed, AI-powered Windows package manager featu
 
 ```
 UpgradeApp/
-├── UpgradeBot.cs          # Main application with security enhancements
+├── MainForm.cs            # Modern UI with service integration
+├── Models/                # Data models and entities
+│   └── UpgradableApp.cs   # Package data model
+├── Services/              # Business logic services
+│   ├── PackageService.cs  # Package management operations
+│   ├── AIService.cs       # AI integration and recommendations
+│   ├── ReportService.cs   # AI report management
+│   └── SettingsService.cs # Configuration and API keys
+├── UI/                    # User interface components
+│   └── SpinningProgressForm.cs # Custom progress dialogs
+├── Utils/                 # Utility classes
+│   └── FileUtils.cs       # File operation helpers
 ├── UpgradeApp.csproj      # Project configuration
 ├── settings.json          # Secure user settings (auto-generated)
 ├── AI_Reports/            # Individual AI research reports (auto-generated)
@@ -194,13 +213,31 @@ UpgradeApp/
 └── README.md             # This documentation
 ```
 
-### Key Components
-- **UpgradeBot.cs**: Main Windows Forms application with:
-  - Secure winget command execution
-  - Thread-safe AI API integration
-  - Protected file operations
-  - Comprehensive error handling
-  - Real-time logging system
+### 🏗️ Modular Architecture
+
+#### **Models Layer**
+- **`UpgradableApp.cs`**: Clean data model representing Windows packages with properties for Name, ID, Version, Status, and AI recommendations
+
+#### **Services Layer** 
+- **`PackageService.cs`**: Handles all winget operations including listing, upgrading, installing, uninstalling, and repairing packages
+- **`AIService.cs`**: Manages AI integration with Claude and Perplexity APIs for intelligent package recommendations
+- **`ReportService.cs`**: Handles AI report generation, saving, and management with markdown formatting
+- **`SettingsService.cs`**: Manages application configuration, API keys, and user preferences with secure storage
+
+#### **UI Layer**
+- **`MainForm.cs`**: Modern Windows Forms interface using service classes with Claude-inspired design
+- **`SpinningProgressForm.cs`**: Custom progress dialog with animated WingetWizard logo and status updates
+
+#### **Utilities Layer**
+- **`FileUtils.cs`**: Common file operations including safe reading/writing, directory management, and path validation
+
+### 🔧 Key Architectural Benefits
+- **Separation of Concerns**: Business logic separated from UI code
+- **Single Responsibility**: Each service has a focused, well-defined purpose  
+- **Dependency Injection**: Services are injected into the main form for better testability
+- **Thread Safety**: Proper async/await patterns throughout all services
+- **Error Handling**: Comprehensive try-catch blocks in all service methods
+- **Modern Patterns**: Following contemporary C# best practices and design patterns
 
 ## 🤝 Contributing
 
@@ -249,4 +286,5 @@ For security issues, please report responsibly through GitHub issues.
 
 ---
 
-**Built with ❤️ and 🔒 by Mark Relph (GeekSuave Labs) using Q Developer, Claude and Cursor - WingetWizard makes secure package management magical! 🧿**
+**Built with ❤️ and 🔒 by Mark Relph (GeekSuave Labs) using Q Developer, Claude and Cursor**  
+**v2.1 - Now with Native OS Theme Support & Dark Mode Window Chrome! WingetWizard makes secure package management magical! 🧿**

@@ -12,30 +12,30 @@ WingetWizard is a beautifully designed, Claude-inspired Windows desktop applicat
 - **Enterprise Decision Support**: Color-coded markdown reports with emoji indicators and executive summaries
 - **Seamless Workflow**: Smart welcome cards, hidden-by-default logs, and context-aware UI transitions
 
-## 🏗️ Architecture
+## 🏗️ Modular Architecture
 
-### Core Components
+### Service-Based Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    WingetWizard Application                 │
 ├─────────────────────────────────────────────────────────────┤
 │  UI Layer (Windows Forms)                                  │
-│  ├── MainForm (Primary Interface)                          │
-│  ├── Settings Dialogs (UI/AI Configuration)                │
-│  └── Research Popup (AI Analysis Display)                  │
+│  ├── MainForm.cs (Primary Interface with Service DI)       │
+│  ├── SpinningProgressForm.cs (Custom Progress Dialogs)     │
+│  └── Settings Dialogs (AI/UI Configuration)                │
 ├─────────────────────────────────────────────────────────────┤
-│  Business Logic Layer                                      │
-│  ├── Package Management (Winget Integration)               │
-│  ├── AI Research Engine (Claude + Perplexity)              │
-│  ├── AI Report Management (Persistent Storage & Links)     │
-│  ├── Export System (Markdown + Text)                       │
-│  └── Logging Framework (Verbose + Error Tracking)          │
+│  Models Layer                                              │
+│  └── UpgradableApp.cs (Package Data Model)                 │
 ├─────────────────────────────────────────────────────────────┤
-│  Data Layer                                                │
-│  ├── Configuration Management (JSON)                       │
-│  ├── API Key Storage (Encrypted Config)                    │
-│  └── Settings Persistence (User Preferences)               │
+│  Services Layer (Business Logic)                           │
+│  ├── PackageService.cs (Winget Operations)                 │
+│  ├── AIService.cs (Claude + Perplexity Integration)        │
+│  ├── ReportService.cs (AI Report Management)               │
+│  └── SettingsService.cs (Configuration Management)         │
+├─────────────────────────────────────────────────────────────┤
+│  Utilities Layer                                           │
+│  └── FileUtils.cs (File Operations & Helpers)              │
 ├─────────────────────────────────────────────────────────────┤
 │  External Integrations                                     │
 │  ├── Windows Package Manager (winget)                      │
@@ -45,9 +45,38 @@ WingetWizard is a beautifully designed, Claude-inspired Windows desktop applicat
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### 🔧 Architectural Principles
+
+#### **Separation of Concerns**
+- **UI Layer**: Handles user interactions and visual presentation
+- **Services Layer**: Contains all business logic and external integrations  
+- **Models Layer**: Defines data structures and entities
+- **Utils Layer**: Provides common functionality and helper methods
+
+#### **Dependency Injection Pattern**
+```csharp
+public MainForm()
+{
+    // Initialize services with proper dependencies
+    _settingsService = new SettingsService();
+    _packageService = new PackageService();
+    _reportService = new ReportService(reportsPath);
+    _aiService = new AIService(apiKey, model, provider);
+    
+    InitializeComponent();
+}
+```
+
+#### **Single Responsibility Principle**
+- Each service class has a single, well-defined purpose
+- Business logic is separated from UI concerns
+- Data models are focused on representing entities
+- Utilities provide reusable functionality
+
 ### Technology Stack
 
 - **Framework**: .NET 6 Windows Forms with modern UI enhancements
+- **Architecture**: Modular service-based design with dependency injection
 - **Design Language**: Claude AI-inspired interface with sophisticated color palette
 - **Typography**: Calibri font family with intelligent fallback system (Calibri → Segoe UI → Generic Sans)
 - **Progress System**: Custom spinning forms with animated logo and real-time status updates
@@ -55,6 +84,32 @@ WingetWizard is a beautifully designed, Claude-inspired Windows desktop applicat
 - **AI Integration**: Enhanced prompting system with structured 7-section analysis templates
 - **Export System**: Professional markdown reports with metadata, executive summaries, and timestamps
 - **Configuration**: JSON-based settings with secure API key management
+
+### 🏗️ Architectural Benefits
+
+#### **Maintainability**
+- **Clear Separation**: Business logic is separated from UI concerns
+- **Focused Classes**: Each service has a single, well-defined responsibility
+- **Easy Updates**: Changes to business logic don't affect UI code and vice versa
+- **Readable Code**: Clean organization makes the codebase easier to understand
+
+#### **Testability** 
+- **Unit Testing**: Services can be tested independently of the UI
+- **Mocking**: Dependencies can be easily mocked for isolated testing
+- **Integration Testing**: Clear service boundaries enable focused integration tests
+- **Quality Assurance**: Modular design supports comprehensive testing strategies
+
+#### **Scalability**
+- **New Features**: Easy to add new functionality without affecting existing code
+- **Service Extension**: Individual services can be enhanced independently
+- **Performance**: Targeted optimizations can be applied to specific services
+- **Future Growth**: Architecture supports adding new AI providers, data sources, etc.
+
+#### **Reusability**
+- **Service Reuse**: Services can be used across different parts of the application
+- **Component Sharing**: UI components can be reused in different contexts
+- **Code Libraries**: Services could be extracted into separate libraries for other projects
+- **API Potential**: Services are structured to potentially expose REST APIs in the future
 
 ## 🔧 Technical Implementation
 
@@ -225,9 +280,19 @@ dotnet run
 
 ```
 UpgradeApp/
-├── UpgradeBot.cs           # Main application logic
+├── MainForm.cs             # Modern UI with service integration
+├── Models/                 # Data models and entities
+│   └── UpgradableApp.cs    # Package data model
+├── Services/               # Business logic services
+│   ├── PackageService.cs   # Package management operations
+│   ├── AIService.cs        # AI integration and recommendations
+│   ├── ReportService.cs    # AI report management
+│   └── SettingsService.cs  # Configuration and API keys
+├── UI/                     # User interface components
+│   └── SpinningProgressForm.cs # Custom progress dialogs
+├── Utils/                  # Utility classes
+│   └── FileUtils.cs        # File operation helpers
 ├── UpgradeApp.csproj       # Project configuration
-├── config.json             # API keys and configuration
 ├── settings.json           # User preferences (auto-generated)
 ├── AI_Reports/             # Individual AI research reports (auto-generated)
 │   ├── PackageName1_YYYYMMDD_HHMMSS.md
@@ -238,6 +303,52 @@ UpgradeApp/
 ├── .gitignore             # Git exclusion rules
 └── installer.wxs          # WiX installer configuration
 ```
+
+### 📋 Service Descriptions
+
+#### **Models Layer**
+- **`UpgradableApp.cs`**: Data model representing Windows packages
+  - Properties: Name, Id, Version, Available, Status, Recommendation
+  - Clean separation of data structure from business logic
+  - Used throughout the application for package representation
+
+#### **Services Layer**
+- **`PackageService.cs`**: Core package management functionality
+  - Methods: `ListAllAppsAsync()`, `CheckForUpdatesAsync()`, `UpgradePackageAsync()`
+  - Handles all winget command execution and PowerShell integration
+  - Thread-safe operations with comprehensive error handling
+  
+- **`AIService.cs`**: AI integration and recommendation engine
+  - Supports both Claude AI and Perplexity API providers
+  - Methods: `GetAIRecommendationAsync()`, `MakeApiRequestAsync()`
+  - Structured prompting with 7-section analysis framework
+  
+- **`ReportService.cs`**: AI report generation and management
+  - Methods: `CreateMarkdownContent()`, `SaveIndividualPackageReports()`
+  - Handles report persistence, loading, and file management
+  - Automatic AI_Reports directory creation and organization
+  
+- **`SettingsService.cs`**: Configuration and settings management
+  - Methods: `GetSetting()`, `SetSetting()`, `StoreApiKey()`, `LoadSettings()`
+  - Secure API key storage and retrieval
+  - JSON-based configuration persistence
+
+#### **UI Layer**
+- **`MainForm.cs`**: Primary application interface
+  - Service dependency injection for clean architecture
+  - Claude-inspired modern design with responsive layout
+  - Event handlers utilizing service classes for business logic
+  
+- **`SpinningProgressForm.cs`**: Custom progress dialog
+  - Animated WingetWizard logo with smooth rotation
+  - Customizable status messages and dark theme styling
+  - Centers on parent window for optimal user experience
+
+#### **Utilities Layer**
+- **`FileUtils.cs`**: Common file operation utilities
+  - Methods: `SafeWriteText()`, `SafeReadText()`, `CreateSafeFileName()`
+  - Error handling and validation for file operations
+  - Path sanitization and security considerations
 
 ## 🔐 Security Considerations
 
@@ -301,8 +412,17 @@ The application builds to a single executable file containing all dependencies:
 
 ---
 
-**Version**: 2.0  
-**Last Updated**: 2024  
+**Version**: 2.1 - Modular Architecture  
+**Last Updated**: January 2025  
 **License**: Private Development Project  
 **Author**: Mark Relph (GeekSuave Labs)  
+**Architecture**: Service-Based Modular Design with Dependency Injection  
 **Built With**: Q Developer, Claude and Cursor - WingetWizard makes package management magical! 🧿
+
+### 🎯 **What's New in v2.1**
+- **Modular Architecture**: Complete refactoring from monolithic to service-based design
+- **Dependency Injection**: Services are properly injected into the main form
+- **Separation of Concerns**: Business logic separated from UI code
+- **Enhanced Maintainability**: Each component has a single, focused responsibility
+- **Improved Testability**: Services can be unit tested independently
+- **Better Scalability**: Easy to add new features and AI providers
