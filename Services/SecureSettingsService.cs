@@ -4,390 +4,318 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using UpgradeApp.Utils;
 
 namespace UpgradeApp.Services
 {
-    public class SecureSettingsService
+    /// <summary>
+    /// Secure settings service for managing sensitive data like API keys.
+    /// Uses Windows DPAPI for encryption at rest.
+    /// </summary>
+    public class SecureSettingsService : IDisposable
     {
-        private readonly string _settingsFilePath;
-        private readonly object _lock = new();
+        private readonly string _secureSettingsPath;
+        private readonly Dictionary<string, string> _secureCache;
+        private readonly object _lock = new object();
+        private bool _disposed = false;
+
+        // Known secure setting keys for validation
+        private static readonly HashSet<string> ValidApiKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "AnthropicApiKey",
+            "PerplexityApiKey", 
+            "BedrockApiKey",
+            "aws_access_key_id",
+            "aws_secret_access_key",
+            "aws_session_token"
+        };
 
         public SecureSettingsService()
         {
-            _settingsFilePath = Path.Combine(Application.StartupPath, "secure_settings.json");
-            System.Diagnostics.Debug.WriteLine($"SecureSettingsService using file: {_settingsFilePath}");
+            _secureSettingsPath = Path.Combine(Application.StartupPath, "secure_settings.json");
+            _secureCache = new Dictionary<string, string>();
+            LoadSecureSettings();
         }
 
-        public void SaveApiKey(string key, string value)
+        /// <summary>
+        /// Gets an API key by name with input validation.
+        /// </summary>
+        /// <param name="keyName">API key name (validated against allowlist)</param>
+        /// <returns>Decrypted API key value or empty string if not found</returns>
+        public string GetApiKey(string keyName)
         {
-            try
+            // Input validation - prevent injection attacks
+            if (string.IsNullOrWhiteSpace(keyName))
             {
-                lock (_lock)
-                {
-                    var encryptedValue = EncryptString(value);
-                    var settings = LoadSettings();
-                    settings[key] = encryptedValue;
-                    SaveSettings(settings);
-                    
-                    System.Diagnostics.Debug.WriteLine($"API key encrypted and saved successfully - KeyName: {key}");
-                }
+                return string.Empty;
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to save encrypted API key - KeyName: {key}, Error: {ex.Message}");
-                throw;
-            }
-        }
 
-        public string? GetApiKey(string key)
-        {
-            try
+            // Validate against known key names to prevent unauthorized access
+            if (!ValidApiKeys.Contains(keyName))
             {
-                lock (_lock)
+                System.Diagnostics.Debug.WriteLine($"[SecureSettings] WARNING: Attempted access to invalid key: {keyName}");
+                return string.Empty;
+            }
+
+            lock (_lock)
+            {
+                if (_secureCache.TryGetValue(keyName, out var encryptedValue))
                 {
-                    var settings = LoadSettings();
-                    if (settings.TryGetValue(key, out var encryptedValue))
+                    try
                     {
-                        var decryptedValue = DecryptString(encryptedValue);
-                        System.Diagnostics.Debug.WriteLine($"API key retrieved and decrypted successfully - KeyName: {key}");
-                        return decryptedValue;
+                        return DecryptValue(encryptedValue);
                     }
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to retrieve encrypted API key - KeyName: {key}, Error: {ex.Message}");
-                return null;
-            }
-        }
-
-        public void RemoveApiKey(string key)
-        {
-            try
-            {
-                lock (_lock)
-                {
-                    var settings = LoadSettings();
-                    if (settings.Remove(key))
+                    catch (Exception ex)
                     {
-                        SaveSettings(settings);
-                        System.Diagnostics.Debug.WriteLine($"API key removed successfully - KeyName: {key}");
+                        System.Diagnostics.Debug.WriteLine($"[SecureSettings] Failed to decrypt key {keyName}: {ex.Message}");
+                        return string.Empty;
                     }
                 }
             }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Stores an API key with encryption.
+        /// </summary>
+        /// <param name="keyName">API key name (validated against allowlist)</param>
+        /// <param name="value">API key value to encrypt and store</param>
+        public void StoreApiKey(string keyName, string value)
+        {
+            // Input validation
+            if (string.IsNullOrWhiteSpace(keyName))
+            {
+                throw new ArgumentException("Key name cannot be null or empty", nameof(keyName));
+            }
+
+            if (!ValidApiKeys.Contains(keyName))
+            {
+                throw new ArgumentException($"Invalid API key name: {keyName}", nameof(keyName));
+            }
+
+            if (string.IsNullOrEmpty(value))
+            {
+                // Remove the key if value is empty
+                RemoveApiKey(keyName);
+                return;
+            }
+
+            try
+            {
+                var encryptedValue = EncryptValue(value);
+                
+                lock (_lock)
+                {
+                    _secureCache[keyName] = encryptedValue;
+                }
+
+                SaveSecureSettings();
+            }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to remove API key - KeyName: {key}, Error: {ex.Message}");
-                throw;
+                throw new InvalidOperationException($"Failed to store API key {keyName}: {ex.Message}", ex);
             }
         }
 
-        public bool HasApiKey(string key)
+        /// <summary>
+        /// Removes an API key from secure storage.
+        /// </summary>
+        /// <param name="keyName">API key name to remove</param>
+        public void RemoveApiKey(string keyName)
         {
-            try
+            if (string.IsNullOrWhiteSpace(keyName) || !ValidApiKeys.Contains(keyName))
             {
-                lock (_lock)
+                return;
+            }
+
+            lock (_lock)
+            {
+                if (_secureCache.Remove(keyName))
                 {
-                    var settings = LoadSettings();
-                    return settings.ContainsKey(key);
+                    SaveSecureSettings();
                 }
             }
-            catch (Exception ex)
+        }
+
+        /// <summary>
+        /// Checks if an API key exists and is configured.
+        /// </summary>
+        /// <param name="keyName">API key name to check</param>
+        /// <returns>True if key exists and has a non-empty value</returns>
+        public bool HasApiKey(string keyName)
+        {
+            if (!ValidApiKeys.Contains(keyName))
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to check API key existence - KeyName: {key}, Error: {ex.Message}");
                 return false;
             }
+
+            var value = GetApiKey(keyName);
+            return !string.IsNullOrEmpty(value);
         }
 
-        private string EncryptString(string plainText)
+        /// <summary>
+        /// Gets all configured API key names (not values).
+        /// </summary>
+        /// <returns>List of configured key names</returns>
+        public IReadOnlyList<string> GetConfiguredKeys()
         {
-            if (string.IsNullOrEmpty(plainText))
-                return string.Empty;
-
-            try
+            lock (_lock)
             {
-                var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
-                var encryptedBytes = ProtectedData.Protect(plainTextBytes, null, DataProtectionScope.CurrentUser);
-                return Convert.ToBase64String(encryptedBytes);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to encrypt string using DPAPI - Error: {ex.Message}");
-                throw new InvalidOperationException("Failed to encrypt sensitive data", ex);
-            }
-        }
-
-        private string DecryptString(string encryptedText)
-        {
-            if (string.IsNullOrEmpty(encryptedText))
-                return string.Empty;
-
-            try
-            {
-                var encryptedBytes = Convert.FromBase64String(encryptedText);
-                var decryptedBytes = ProtectedData.Unprotect(encryptedBytes, null, DataProtectionScope.CurrentUser);
-                return Encoding.UTF8.GetString(decryptedBytes);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to decrypt string using DPAPI - Error: {ex.Message}");
-                throw new InvalidOperationException("Failed to decrypt sensitive data", ex);
-            }
-        }
-
-        private Dictionary<string, string> LoadSettings()
-        {
-            try
-            {
-                if (!File.Exists(_settingsFilePath))
+                var configuredKeys = new List<string>();
+                foreach (var keyName in ValidApiKeys)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Secure settings file does not exist: {_settingsFilePath}");
-                    return new Dictionary<string, string>();
+                    if (_secureCache.ContainsKey(keyName))
+                    {
+                        configuredKeys.Add(keyName);
+                    }
+                }
+                return configuredKeys.AsReadOnly();
+            }
+        }
+
+        /// <summary>
+        /// Clears all API keys from secure storage.
+        /// </summary>
+        public void ClearAllApiKeys()
+        {
+            lock (_lock)
+            {
+                _secureCache.Clear();
+            }
+            SaveSecureSettings();
+        }
+
+        /// <summary>
+        /// Loads secure settings from encrypted file.
+        /// </summary>
+        private void LoadSecureSettings()
+        {
+            try
+            {
+                if (!File.Exists(_secureSettingsPath))
+                {
+                    return; // No secure settings file exists yet
                 }
 
-                var jsonContent = File.ReadAllText(_settingsFilePath);
-                if (string.IsNullOrWhiteSpace(jsonContent))
+                var encryptedJson = File.ReadAllText(_secureSettingsPath, Encoding.UTF8);
+                if (string.IsNullOrWhiteSpace(encryptedJson))
                 {
-                    return new Dictionary<string, string>();
+                    return;
                 }
 
-                var settings = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonContent);
-                var result = settings ?? new Dictionary<string, string>();
-                System.Diagnostics.Debug.WriteLine($"Loaded {result.Count} secure settings from: {_settingsFilePath}");
-                return result;
+                var settings = JsonSerializer.Deserialize<Dictionary<string, string>>(encryptedJson);
+                if (settings != null)
+                {
+                    lock (_lock)
+                    {
+                        _secureCache.Clear();
+                        foreach (var kvp in settings)
+                        {
+                            // Only load valid API keys
+                            if (ValidApiKeys.Contains(kvp.Key))
+                            {
+                                _secureCache[kvp.Key] = kvp.Value;
+                            }
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to load settings file - FilePath: {_settingsFilePath}, Error: {ex.Message}");
-                return new Dictionary<string, string>();
+                System.Diagnostics.Debug.WriteLine($"[SecureSettings] Failed to load secure settings: {ex.Message}");
+                // Continue with empty cache - don't throw to prevent app startup failure
             }
         }
 
-        private void SaveSettings(Dictionary<string, string> settings)
+        /// <summary>
+        /// Saves secure settings to encrypted file.
+        /// </summary>
+        private void SaveSecureSettings()
         {
             try
             {
-                var directory = Path.GetDirectoryName(_settingsFilePath);
+                Dictionary<string, string> toSave;
+                lock (_lock)
+                {
+                    toSave = new Dictionary<string, string>(_secureCache);
+                }
+
+                var json = JsonSerializer.Serialize(toSave, new JsonSerializerOptions { WriteIndented = true });
+                
+                // Ensure directory exists
+                var directory = Path.GetDirectoryName(_secureSettingsPath);
                 if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 {
                     Directory.CreateDirectory(directory);
                 }
 
-                var jsonContent = JsonSerializer.Serialize(settings, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-                File.WriteAllText(_settingsFilePath, jsonContent);
-                System.Diagnostics.Debug.WriteLine($"Secure settings saved to: {_settingsFilePath}");
+                File.WriteAllText(_secureSettingsPath, json, Encoding.UTF8);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to save settings file - FilePath: {_settingsFilePath}, Error: {ex.Message}");
-                throw;
+                throw new InvalidOperationException($"Failed to save secure settings: {ex.Message}", ex);
             }
         }
 
-        public void ClearAllApiKeys()
+        /// <summary>
+        /// Encrypts a value using Windows DPAPI.
+        /// </summary>
+        /// <param name="plainText">Plain text to encrypt</param>
+        /// <returns>Base64 encoded encrypted value</returns>
+        private static string EncryptValue(string plainText)
         {
+            if (string.IsNullOrEmpty(plainText))
+            {
+                return string.Empty;
+            }
+
             try
+            {
+                var plainBytes = Encoding.UTF8.GetBytes(plainText);
+                var encryptedBytes = ProtectedData.Protect(plainBytes, null, DataProtectionScope.CurrentUser);
+                return Convert.ToBase64String(encryptedBytes);
+            }
+            catch (Exception ex)
+            {
+                throw new CryptographicException($"Failed to encrypt value: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Decrypts a value using Windows DPAPI.
+        /// </summary>
+        /// <param name="encryptedText">Base64 encoded encrypted value</param>
+        /// <returns>Decrypted plain text</returns>
+        private static string DecryptValue(string encryptedText)
+        {
+            if (string.IsNullOrEmpty(encryptedText))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                var encryptedBytes = Convert.FromBase64String(encryptedText);
+                var plainBytes = ProtectedData.Unprotect(encryptedBytes, null, DataProtectionScope.CurrentUser);
+                return Encoding.UTF8.GetString(plainBytes);
+            }
+            catch (Exception ex)
+            {
+                throw new CryptographicException($"Failed to decrypt value: {ex.Message}", ex);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (!_disposed)
             {
                 lock (_lock)
                 {
-                    if (File.Exists(_settingsFilePath))
-                    {
-                        File.Delete(_settingsFilePath);
-                        System.Diagnostics.Debug.WriteLine("All API keys cleared from secure storage");
-                    }
+                    // Clear sensitive data from memory
+                    _secureCache.Clear();
                 }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to clear all API keys - Error: {ex.Message}");
-                throw;
-            }
-        }
-
-        public bool ValidateEncryption()
-        {
-            try
-            {
-                const string testData = "test_encryption_validation";
-                var encrypted = EncryptString(testData);
-                var decrypted = DecryptString(encrypted);
-                
-                var isValid = testData.Equals(decrypted, StringComparison.Ordinal);
-                
-                System.Diagnostics.Debug.WriteLine($"Encryption validation completed - IsValid: {isValid}");
-                
-                return isValid;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Encryption validation failed - Error: {ex.Message}");
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Saves AWS Bedrock credentials securely
-        /// </summary>
-        /// <param name="accessKeyId">AWS Access Key ID</param>
-        /// <param name="secretAccessKey">AWS Secret Access Key</param>
-        /// <param name="region">AWS Region</param>
-        /// <param name="selectedModel">Selected Bedrock model</param>
-        public void SaveBedrockCredentials(string accessKeyId, string secretAccessKey, string region, string selectedModel)
-        {
-            try
-            {
-                SaveApiKey("aws_access_key_id", accessKeyId);
-                SaveApiKey("aws_secret_access_key", secretAccessKey);
-                SaveApiKey("aws_region", region);
-                SaveApiKey("bedrock_model", selectedModel);
-                
-                System.Diagnostics.Debug.WriteLine($"AWS Bedrock credentials saved successfully - Region: {region}, Model: {selectedModel}");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to save AWS Bedrock credentials - Error: {ex.Message}");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Retrieves AWS Bedrock credentials
-        /// </summary>
-        /// <returns>Tuple of AWS credentials or null if not configured</returns>
-        public (string? AccessKeyId, string? SecretAccessKey, string? Region, string? Model) GetBedrockCredentials()
-        {
-            try
-            {
-                var accessKeyId = GetApiKey("aws_access_key_id");
-                var secretAccessKey = GetApiKey("aws_secret_access_key");
-                var region = GetApiKey("aws_region") ?? AppConstants.DEFAULT_AWS_REGION;
-                var model = GetApiKey("bedrock_model") ?? AppConstants.BEDROCK_CLAUDE_35_SONNET_V2;
-                
-                System.Diagnostics.Debug.WriteLine($"AWS Bedrock credentials retrieved - HasAccessKey: {!string.IsNullOrEmpty(accessKeyId)}, Region: {region}, Model: {model}");
-                
-                return (accessKeyId, secretAccessKey, region, model);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to retrieve AWS Bedrock credentials - Error: {ex.Message}");
-                return (null, null, null, null);
-            }
-        }
-
-        /// <summary>
-        /// Checks if AWS Bedrock is configured
-        /// </summary>
-        /// <returns>True if AWS credentials are available</returns>
-        public bool HasBedrockCredentials()
-        {
-            var (accessKeyId, secretAccessKey, _, _) = GetBedrockCredentials();
-            return !string.IsNullOrEmpty(accessKeyId) && !string.IsNullOrEmpty(secretAccessKey);
-        }
-
-        /// <summary>
-        /// Removes all AWS Bedrock credentials
-        /// </summary>
-        public void ClearBedrockCredentials()
-        {
-            try
-            {
-                RemoveApiKey("aws_access_key_id");
-                RemoveApiKey("aws_secret_access_key");
-                RemoveApiKey("aws_region");
-                RemoveApiKey("bedrock_model");
-                
-                System.Diagnostics.Debug.WriteLine("AWS Bedrock credentials cleared successfully");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to clear AWS Bedrock credentials - Error: {ex.Message}");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Gets available Bedrock models using stored credentials
-        /// </summary>
-        /// <param name="forceRefresh">Force refresh from API</param>
-        /// <returns>List of available models or empty list if no credentials</returns>
-        public async Task<List<BedrockModelDiscoveryService.BedrockModel>> GetAvailableBedrockModelsAsync(bool forceRefresh = false)
-        {
-            try
-            {
-                var (accessKeyId, secretAccessKey, region, _) = GetBedrockCredentials();
-                
-                if (string.IsNullOrEmpty(accessKeyId) || string.IsNullOrEmpty(secretAccessKey))
-                {
-                    System.Diagnostics.Debug.WriteLine("No Bedrock credentials available for model discovery");
-                    return new List<BedrockModelDiscoveryService.BedrockModel>();
-                }
-
-                var discoveryService = new BedrockModelDiscoveryService(accessKeyId, secretAccessKey, region ?? AppConstants.DEFAULT_AWS_REGION);
-                var models = await discoveryService.GetTextModelsAsync(forceRefresh);
-                
-                System.Diagnostics.Debug.WriteLine($"Successfully retrieved available Bedrock models - ModelCount: {models.Count}, Region: {region}");
-                
-                return models;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to get available Bedrock models - Error: {ex.Message}");
-                return new List<BedrockModelDiscoveryService.BedrockModel>();
-            }
-        }
-
-        /// <summary>
-        /// Gets recommended Bedrock models for different use cases
-        /// </summary>
-        /// <returns>Dictionary of use case to recommended model</returns>
-        public async Task<Dictionary<string, BedrockModelDiscoveryService.BedrockModel>> GetRecommendedBedrockModelsAsync()
-        {
-            try
-            {
-                var models = await GetAvailableBedrockModelsAsync();
-                return BedrockModelDiscoveryService.GetRecommendedModels(models);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to get recommended Bedrock models - Error: {ex.Message}");
-                return new Dictionary<string, BedrockModelDiscoveryService.BedrockModel>();
-            }
-        }
-
-        /// <summary>
-        /// Validates the currently configured Bedrock model
-        /// </summary>
-        /// <returns>True if model is available in the configured region</returns>
-        public async Task<bool> ValidateBedrockModelAsync()
-        {
-            try
-            {
-                var (accessKeyId, secretAccessKey, region, model) = GetBedrockCredentials();
-                
-                if (string.IsNullOrEmpty(accessKeyId) || string.IsNullOrEmpty(secretAccessKey) || string.IsNullOrEmpty(model))
-                {
-                    return false;
-                }
-
-                var discoveryService = new BedrockModelDiscoveryService(accessKeyId, secretAccessKey, region ?? AppConstants.DEFAULT_AWS_REGION);
-                var isAvailable = await discoveryService.IsModelAvailableAsync(model);
-                
-                System.Diagnostics.Debug.WriteLine($"Bedrock model validation completed - Model: {model}, Region: {region}, IsAvailable: {isAvailable}");
-                
-                return isAvailable;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to validate Bedrock model - Error: {ex.Message}");
-                return false;
+                _disposed = true;
             }
         }
     }
