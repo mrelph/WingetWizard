@@ -90,6 +90,9 @@ WingetWizard is a beautifully designed, AI-powered Windows package manager featu
 - **Rich Text Rendering**: Theme-aware markdown display with proper contrast
 - **Deployment**: Single-file executable with self-contained deployment
 - **Security**: Thread-safe operations, input validation, secure storage
+- **Services**: AIService, PackageService, ReportService, SettingsService
+- **Models**: UpgradableApp data model for package representation
+- **Utils**: FileUtils for safe file operations and path validation
 
 ## 📋 Requirements
 
@@ -199,10 +202,15 @@ UpgradeApp/
 │   ├── AIService.cs       # AI integration and recommendations
 │   ├── ReportService.cs   # AI report management
 │   └── SettingsService.cs # Configuration and API keys
-├── UI/                    # User interface components
-│   └── SpinningProgressForm.cs # Custom progress dialogs
 ├── Utils/                 # Utility classes
 │   └── FileUtils.cs       # File operation helpers
+├── docs/                  # Comprehensive documentation
+│   ├── README.md          # Documentation hub and index
+│   ├── USER_GUIDE.md      # End-user guide and tutorials
+│   ├── API_REFERENCE.md   # Detailed API documentation
+│   ├── PROJECT_STRUCTURE.md # Architecture and organization
+│   ├── SECURITY.md        # Security features and best practices
+│   └── DEPLOYMENT.md      # Build and deployment guide
 ├── UpgradeApp.csproj      # Project configuration
 ├── settings.json          # Secure user settings (auto-generated)
 ├── AI_Reports/            # Individual AI research reports (auto-generated)
@@ -210,7 +218,8 @@ UpgradeApp/
 │   ├── PackageName2_YYYYMMDD_HHMMSS.md
 │   └── ...
 ├── installer.wxs          # WiX installer configuration
-└── README.md             # This documentation
+├── README.md             # This documentation
+└── DOCUMENTATION.md      # Comprehensive technical documentation
 ```
 
 ### 🏗️ Modular Architecture
@@ -267,9 +276,28 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Security Community** for vulnerability research and best practices
 - **Contributors** for code reviews and security improvements
 
-## 📞 Support
+## 📞 Support & Documentation
 
-For issues, questions, or feature requests, please open an issue on GitHub.
+### 📚 Comprehensive Documentation
+WingetWizard includes extensive documentation to help you get the most out of the application:
+
+- **[Documentation Hub](docs/README.md)** - Central index for all documentation
+- **[User Guide](docs/USER_GUIDE.md)** - Complete tutorial and help for end users
+- **[API Reference](docs/API_REFERENCE.md)** - Detailed technical documentation
+- **[Security Guide](docs/SECURITY.md)** - Security features and best practices
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Build and installation instructions
+
+### 🆘 Getting Help
+- **Built-in Help**: Click the **❓ Help** button in the application for quick reference
+- **GitHub Issues**: Report bugs and request features
+- **GitHub Discussions**: Ask questions and share tips
+- **Documentation**: Check the comprehensive guides in the `docs/` directory
+
+### 💡 Quick Help Topics
+- **Installation Issues**: See [Deployment Guide](docs/DEPLOYMENT.md#troubleshooting)
+- **API Configuration**: Check [User Guide - AI Setup](docs/USER_GUIDE.md#ai-configuration)
+- **Package Problems**: Review [User Guide - Troubleshooting](docs/USER_GUIDE.md#troubleshooting)
+- **Security Questions**: Read [Security Documentation](docs/SECURITY.md)
 
 ---
 
