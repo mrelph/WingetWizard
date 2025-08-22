@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="Winget Upgrade App" Language="1033" Version="1.0.0.0" Manufacturer="Your Company" UpgradeCode="12345678-1234-1234-1234-123456789012">
+  <Product Id="*" Name="WingetWizard" Language="1033" Version="2.4.0.0" Manufacturer="GeekSuave Labs" UpgradeCode="12345678-1234-1234-1234-123456789012">
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
     
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate />
     
-    <Feature Id="ProductFeature" Title="Winget Upgrade App" Level="1">
+    <Feature Id="ProductFeature" Title="WingetWizard" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
     </Feature>
   </Product>
@@ -14,7 +14,7 @@
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
-        <Directory Id="INSTALLFOLDER" Name="WingetUpgradeApp" />
+        <Directory Id="INSTALLFOLDER" Name="WingetWizard" />
       </Directory>
     </Directory>
   </Fragment>
@@ -22,7 +22,7 @@
   <Fragment>
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="MainExecutable">
-        <File Id="UpgradeAppExe" Source="bin\Release\net6.0-windows\win-x64\publish\UpgradeApp.exe" KeyPath="yes" />
+        <File Id="WingetWizardExe" Source="bin\Release\net6.0-windows\win-x64\publish\WingetWizard.exe" KeyPath="yes" />
       </Component>
     </ComponentGroup>
   </Fragment>

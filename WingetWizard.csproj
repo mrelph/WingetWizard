@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationIcon>Logo1.ico</ApplicationIcon>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishTrimmed>false</PublishTrimmed>
+    <AssemblyTitle>WingetWizard</AssemblyTitle>
+    <AssemblyDescription>AI-Enhanced Windows Package Manager with Search &amp; Discovery</AssemblyDescription>
+    <AssemblyCompany>GeekSuave Labs</AssemblyCompany>
+    <AssemblyProduct>WingetWizard</AssemblyProduct>
+    <AssemblyVersion>2.4.0.0</AssemblyVersion>
+    <AssemblyFileVersion>2.4.0.0</AssemblyFileVersion>
+    <Copyright>© 2025 GeekSuave Labs. All rights reserved.</Copyright>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors />
+    <NoWarn>CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8625</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Logo1.ico" />
+    <Content Include="WinGetLogo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Include="Logo1.ico" />
+    <EmbeddedResource Include="WinGetLogo.png" />
+  </ItemGroup>
+
+</Project>

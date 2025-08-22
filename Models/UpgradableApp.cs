@@ -1,6 +1,6 @@
 using System;
 
-namespace UpgradeApp.Models
+namespace WingetWizard.Models
 {
     /// <summary>
     /// Data model representing a Windows package that can be upgraded

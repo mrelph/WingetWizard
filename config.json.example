@@ -1,0 +1,4 @@
+{
+  "AnthropicApiKey": "your-claude-api-key-here",
+  "PerplexityApiKey": "your-perplexity-api-key-here"
+}

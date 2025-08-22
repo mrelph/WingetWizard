@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Services
 {
     /// <summary>
     /// Service class responsible for application settings management
@@ -64,6 +64,9 @@ namespace UpgradeApp.Services
         /// <param name="value">Setting value</param>
         public void SetSetting<T>(string key, T value)
         {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentException("Key cannot be null or empty", nameof(key));
+                
             _settings[key] = value!;
         }
 
@@ -74,6 +77,9 @@ namespace UpgradeApp.Services
         /// <returns>API key value or empty string</returns>
         public string GetApiKey(string keyName)
         {
+            if (string.IsNullOrWhiteSpace(keyName))
+                throw new ArgumentException("Key name cannot be null or empty", nameof(keyName));
+                
             return GetSetting<string>(keyName, "");
         }
 
@@ -84,7 +90,11 @@ namespace UpgradeApp.Services
         /// <param name="value">API key value</param>
         public void StoreApiKey(string keyName, string value)
         {
+            if (string.IsNullOrWhiteSpace(keyName))
+                throw new ArgumentException("Key name cannot be null or empty", nameof(keyName));
+                
             SetSetting(keyName, value);
+            SaveSettings(); // Persist changes immediately
         }
 
         /// <summary>
@@ -93,9 +103,13 @@ namespace UpgradeApp.Services
         /// <param name="keyName">API key name to remove</param>
         public void RemoveApiKey(string keyName)
         {
+            if (string.IsNullOrWhiteSpace(keyName))
+                throw new ArgumentException("Key name cannot be null or empty", nameof(keyName));
+                
             if (_settings.ContainsKey(keyName))
             {
                 _settings.Remove(keyName);
+                SaveSettings(); // Persist changes immediately
             }
         }
 
