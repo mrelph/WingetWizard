@@ -1,240 +1,193 @@
-# 🧿 WingetWizard - Modern AI-Enhanced Package Manager
+# 🧿 WingetWizard - AI-Enhanced Package Manager
 
-WingetWizard is a beautifully designed, AI-powered Windows package manager featuring a Claude-inspired interface, intelligent upgrade recommendations, and comprehensive security analysis. Experience package management reimagined with modern aesthetics and professional functionality.
+**AI-Powered Windows Package Management with Claude and AWS Bedrock Integration**
 
-## ✨ Features
+WingetWizard is a sophisticated Windows Forms application that combines the power of winget with advanced AI capabilities, providing intelligent package management, upgrade recommendations, and comprehensive system analysis.
 
-### 📦 Package Operations
-- **🔄 Check Updates**: Scan for available package updates with security validation
-- **📦 Upgrade Selected**: Update only checked packages individually with safety checks
-- **🚀 Upgrade All**: Update all available packages at once with progress tracking
-- **📋 List All Apps**: View complete inventory of installed software
-- **📦 Install Selected**: Install new packages from checked items with validation
-- **🗑️ Uninstall Selected**: Remove checked packages safely with confirmation
-- **🔧 Repair Selected**: Fix corrupted or problematic installations
+## ✨ Key Features
 
-### 🤖 AI-Powered Features
-- **Enhanced AI Prompting**: Comprehensive 7-section structured analysis with intelligent formatting
-- **Rich Markdown Reports**: Color-coded recommendations with emoji indicators and professional styling
-- **Dual AI Providers**: Claude AI (knowledge-based) and Perplexity (real-time web research)
-- **Security Assessment**: Vulnerability analysis with risk level indicators (🟢🟡🔴🟣)
-- **Multiple AI Models**: Claude Sonnet 4, 3.5 Sonnet, 3.5 Haiku, 3 Opus
-- **Intelligent Export**: Professional markdown reports with metadata and executive summaries
-- **Progress Tracking**: Spinning icon progress indicators with real-time status updates
+### 🤖 **Advanced AI Integration**
+- **Configurable Primary/Fallback LLM Providers**: Choose between Anthropic Claude Direct API or AWS Bedrock as your primary LLM
+- **Automatic Fallback**: Seamless fallback to secondary provider if primary fails
+- **Two-Stage AI Analysis**: Perplexity provides research data, primary LLM generates professional reports
+- **Multiple Authentication Methods**: Support for both Bedrock API keys and full AWS credentials
 
-### 🔒 Security Features
-- **Command Injection Protection**: Validated winget command execution
-- **Path Traversal Prevention**: Sanitized file path handling
-- **Secure API Key Management**: Password-masked prompts with encrypted storage
-- **Thread-Safe Operations**: Synchronized HTTP requests and UI updates
-- **Input Validation**: Comprehensive parameter sanitization
-- **Safe File Operations**: Protected export and logging functionality
+### 🎨 **Modern UI & Theme Integration**
+- **Native Windows Theme Support**: Automatically detects and matches your OS dark/light mode preference
+- **Dark Mode Window Chrome**: Title bar, minimize/maximize/close buttons match system appearance
+- **Claude-Inspired Design**: Modern, sophisticated interface with professional aesthetics
+- **Responsive Layout**: Auto-sizing columns and adaptive UI elements
 
-### 📤 Export & Logging
-- **📤 Professional Export**: Auto-generated filenames with timestamps and package counts
-- **💾 Rich Markdown Export**: Beautifully formatted AI research reports with visual hierarchy
-- **📄 Smart Logging**: Collapsible panel hidden by default for cleaner interface
-- **Real-time Updates**: Comprehensive operation tracking with modern green terminal styling
-- **Enhanced Help System**: Rich text help dialogs with colors, emojis, and better typography
+### 📦 **Comprehensive Package Management**
+- **Multi-Source Support**: winget, Microsoft Store, and combined sources
+- **AI-Powered Research**: Get intelligent upgrade recommendations and security analysis
+- **Batch Operations**: Upgrade, install, uninstall, and repair multiple packages
+- **Export & Reporting**: Professional markdown reports with metadata and executive summaries
 
-### 🎨 Modern Claude-Inspired Interface
-- **Sophisticated Design**: Claude AI-inspired dark theme with refined color palette
-- **Welcome Experience**: Personalized time-based greetings ("Good evening, Mark")
-- **Smart Welcome Cards**: Interactive action suggestions when no packages are loaded
-- **Modern Typography**: Calibri font with intelligent fallbacks for enhanced readability
-- **Card-Based Buttons**: Elegant spacing and subtle borders with sophisticated hover effects
-- **Professional Colors**: Carefully curated color scheme with blues, purples, oranges, and greens
-- **Spinning Progress**: Animated logo indicators centered on main window during operations
-- **Rich Text Displays**: Color-coded help dialogs and AI reports with visual hierarchy
-- **Intelligent Layout**: Hidden logs panel by default, larger fonts, and generous spacing
-
-## 🎨 User Experience Highlights
-
-### 🌟 **Welcome Experience**
-- **Personalized Greeting**: Time-aware welcome message with user's name
-- **Action Cards**: Four elegant suggestion cards for common operations
-- **Smart Visibility**: Welcome screen appears when empty, hides when packages load
-- **Professional Aesthetics**: Claude AI-inspired design language throughout
-
-### 🎯 **Modern Interactions**
-- **Spinning Progress**: Animated logo indicators that center perfectly on the main window
-- **Rich Text Reports**: Color-coded AI analysis with emoji indicators and visual hierarchy
-- **Sophisticated Colors**: Professional palette with semantic color coding
-- **Enhanced Typography**: Modern Calibri font with improved readability
-
-### 📱 **Responsive Design**
-- **Adaptive Layout**: Intelligent spacing and sizing for different screen sizes
-- **Hidden-by-Default Logs**: Cleaner interface with collapsible detailed logging
-- **Card-Based Actions**: Buttons with sophisticated hover effects and spacing
-- **Professional Help**: Rich text help system with colors, emojis, and structure
-
-## 🛠️ Technical Stack
-
-- **Framework**: .NET 6 Windows Forms with modern UI enhancements
-- **Typography**: Calibri font family with intelligent fallback system  
-- **Design Language**: Claude AI-inspired interface with sophisticated color palette
-- **AI Integration**: Enhanced prompting with structured 7-section analysis
-- **Progress Indicators**: Custom spinning form with animated logo and status updates
-- **Rich Text Rendering**: Color-coded markdown display with emoji support
-- **Architecture**: Single-file executable with self-contained deployment
-- **Security**: Thread-safe operations, input validation, secure storage
-
-## 📋 Requirements
-
-- Windows 10/11
-- .NET 6 Runtime (or self-contained build)
-- Windows Package Manager (winget)
-- API keys for AI features:
-  - Anthropic API key for Claude models
-  - Perplexity API key for real-time web research (optional)
-- Administrator privileges recommended for package operations
+### 🔧 **Advanced Features**
+- **Health Monitoring**: System health checks and performance metrics
+- **Configuration Validation**: Automatic validation of API keys and settings
+- **Virtualization Support**: Efficient handling of large package lists
+- **Caching System**: Optimized performance with intelligent caching
 
 ## 🚀 Getting Started
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd UpgradeApp
-   ```
+### Prerequisites
+- Windows 10/11
+- .NET 6.0 Runtime
+- winget (usually pre-installed on Windows 10/11)
 
-2. **Build and Run**
-   ```bash
-   dotnet build
-   dotnet run
-   ```
+### Installation
+1. Download the latest release from the [Releases](https://github.com/yourusername/WingetWizard/releases) page
+2. Extract the ZIP file to your preferred location
+3. Run `UpgradeApp.exe`
 
-3. **Configure API Keys**
-   - Launch the application
-   - Click "⚙️ Settings" button
-   - Enter API keys when prompted (securely stored in settings.json)
-   - Choose AI provider: Claude or Perplexity
-   - Select AI model and UI mode preferences
+### First-Time Setup
+1. **Configure Primary LLM Provider**:
+   - Go to ⚙️ Settings → AI Settings
+   - Select your preferred primary LLM (Anthropic Claude or AWS Bedrock)
+   - The other provider will automatically serve as fallback
 
-## 📖 Usage
+2. **Add Required Credentials**:
+   - **If Anthropic is Primary**: Add your Claude API key
+   - **If Bedrock is Primary**: Add either Bedrock API key OR AWS credentials
+   - **Perplexity API Key**: Required for research data (used by all configurations)
 
-### 🌟 **Getting Started Experience**
-1. **Welcome Screen**: Greeted with personalized time-based message and action cards
-2. **Quick Actions**: Click suggestion cards or use toolbar buttons to begin
-3. **Smart Interface**: Logs hidden by default for clean, focused experience
-4. **Progress Feedback**: Enjoy spinning logo animations during operations
+3. **Test Connection**: Use the 🔍 button to verify your Bedrock connection
 
-### 📦 **Package Operations**
-1. **🔄 Check Updates**: Scan for available package updates with animated progress
-2. **📋 List All Apps**: View complete software inventory in modern interface  
-3. **Select Packages**: Use checkboxes to select multiple packages for batch operations
-4. **📦 Upgrade Selected**: Update only checked packages with real-time status
-5. **🚀 Upgrade All**: Update all available packages with comprehensive progress tracking
-6. **📦 Install Selected**: Install new packages with validation and confirmation
-7. **🗑️ Uninstall Selected**: Remove packages safely with confirmation dialogs
-8. **🔧 Repair Selected**: Fix corrupted installations with detailed logging
+## 🔑 Authentication Options
 
-### 🤖 **Enhanced AI Research Workflow**
-1. **Check Updates**: Populate the upgrade list with spinning progress indicator
-2. **Select Packages**: Choose packages using improved checkboxes in modern interface
-3. **AI Analysis**: Click "🤖 AI Research" for comprehensive 7-section analysis
-4. **Rich Reports**: Review color-coded reports with emoji indicators and visual hierarchy
-5. **Professional Export**: Save beautifully formatted markdown reports with metadata
-6. **Executive Summary**: Get recommendation counts and professional formatting
+### Anthropic Claude Direct API
+- **API Key**: Get from [Anthropic Console](https://console.anthropic.com/)
+- **Models**: Claude 3.5 Sonnet, Claude 3.5 Haiku, Claude Sonnet 4
+- **Use Case**: High-quality text generation and analysis
 
-### 📤 Export & Configuration
-- **📤 Export**: Save package lists and AI research to validated file paths
-- **📄 Logs**: Toggle collapsible logging panel with real-time updates
-- **⚙️ Settings**: Configure UI mode, API keys, and AI providers securely
-- **AI Settings**: Choose between Claude and Perplexity with model selection
-- **Source Selection**: winget, msstore, or all sources with validation
-- **Debug Logging**: Enhanced diagnostic information for troubleshooting
+### AWS Bedrock
+- **Option 1**: Bedrock API Key (Recommended)
+  - Get from AWS Console → Bedrock → API Keys
+  - Simpler than full AWS credentials
+- **Option 2**: Full AWS Credentials
+  - Access Key ID + Secret Access Key + Region
+  - More control but requires IAM setup
 
-### 🔒 Security Features
-- **Secure API Key Storage**: Keys stored encrypted in settings.json
-- **Command Validation**: All winget commands validated before execution
-- **Path Sanitization**: File operations protected against traversal attacks
-- **Thread Safety**: Synchronized operations prevent race conditions
-- **Error Handling**: Comprehensive exception management with logging
+### Perplexity AI
+- **API Key**: Get from [Perplexity Console](https://www.perplexity.ai/settings/api)
+- **Use Case**: Research and data gathering for package analysis
+
+## 📋 Usage Guide
+
+### Basic Operations
+1. **List All Apps**: View your complete software inventory
+2. **Check Updates**: Scan for available package upgrades
+3. **AI Research**: Get intelligent recommendations for selected packages
+4. **Batch Operations**: Select multiple packages for upgrade/install/uninstall
+
+### AI Research Process
+1. Select packages for analysis
+2. Click "🤖 AI Research"
+3. Perplexity gathers research data
+4. Primary LLM generates professional report
+5. Fallback to secondary LLM if needed
+6. Individual reports saved to `AI_Reports` folder
+
+### Theme Integration
+- **Automatic Detection**: App automatically matches your Windows theme
+- **Dark Mode**: Complete dark theme with native window chrome
+- **Light Mode**: Clean, professional light theme
+- **Consistent Theming**: All dialogs and controls follow system appearance
+
+## 🏗️ Architecture
+
+### Service Layer
+- **PackageService**: Core winget operations
+- **AIService**: Multi-provider AI integration with fallback
+- **BedrockModelDiscoveryService**: Dynamic model discovery
+- **HealthCheckService**: System monitoring and diagnostics
+- **PerformanceMetricsService**: Performance tracking and optimization
+
+### Thread Safety
+- **Lock-Free Operations**: Efficient concurrent package management
+- **Async/Await**: Non-blocking UI operations
+- **Service Isolation**: Independent service instances for stability
 
 ## 🔧 Configuration
 
-### UI Modes
-- **Simple Mode**: Basic upgrade functionality with essential security features
-- **Advanced Mode**: Full feature set with AI integration and advanced controls
+### Settings File
+- **Location**: `settings.json` in application directory
+- **Primary LLM**: Stored in secure settings
+- **API Keys**: Encrypted and stored securely
+- **UI Preferences**: Theme, advanced mode, logging settings
 
-### AI Configuration
-- **Claude Models**: Sonnet 4 (default), 3.5 Sonnet, 3.5 Haiku, 3 Opus
-- **Perplexity**: Real-time web research with Sonar model
-- **API Keys**: Securely configured through password-masked dialogs
-- **Provider Selection**: Switch between Claude and Perplexity in settings
-- **Request Throttling**: Thread-safe HTTP client with semaphore-based limiting
+### Environment Variables
+- **BEDROCK_API_KEY**: Alternative to UI configuration
+- **ANTHROPIC_API_KEY**: Claude API key
+- **PERPLEXITY_API_KEY**: Research API key
 
-### Security Settings
-- **API Key Management**: Secure storage with encryption in settings.json
-- **Command Validation**: Whitelist-based winget command filtering
-- **File Path Validation**: Protection against directory traversal attacks
-- **Logging Level**: Configurable debug and operational logging
-- **Thread Safety**: Synchronized operations for multi-threaded stability
+## 📊 Performance Features
 
-## 📁 Project Structure
+### Caching System
+- **Memory Cache**: Fast access to frequently used data
+- **Disk Cache**: Persistent storage for offline access
+- **Auto-Cleanup**: Automatic cache management and cleanup
 
-```
-UpgradeApp/
-├── UpgradeBot.cs          # Main application with security enhancements
-├── UpgradeApp.csproj      # Project configuration
-├── settings.json          # Secure user settings (auto-generated)
-├── installer.wxs          # WiX installer configuration
-└── README.md             # This documentation
-```
+### Virtualization
+- **Large List Support**: Efficient handling of 1000+ packages
+- **Memory Optimization**: Minimal memory footprint
+- **Smooth Scrolling**: Responsive UI even with large datasets
 
-### Key Components
-- **UpgradeBot.cs**: Main Windows Forms application with:
-  - Secure winget command execution
-  - Thread-safe AI API integration
-  - Protected file operations
-  - Comprehensive error handling
-  - Real-time logging system
+## 🚨 Troubleshooting
+
+### Common Issues
+1. **Bedrock Connection Failed**
+   - Verify API key or AWS credentials
+   - Check region selection
+   - Ensure network connectivity
+
+2. **No Models Available**
+   - Try different AWS regions
+   - Check IAM permissions for Bedrock
+   - Use Bedrock API key instead of full credentials
+
+3. **Theme Not Applied**
+   - Restart the application
+   - Check Windows theme settings
+   - Verify .NET 6.0 runtime installation
+
+### Debug Information
+- **Logs**: View detailed logs in the application
+- **Debug Output**: Check Visual Studio Output window
+- **Health Check**: Use the health check feature in settings
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes following security best practices
-4. Test thoroughly including security scenarios
-5. Ensure all security validations pass
-6. Submit a pull request with security impact assessment
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-### Security Guidelines
-- Follow secure coding practices
-- Validate all user inputs
-- Use parameterized commands
-- Implement proper error handling
-- Test for common vulnerabilities (OWASP Top 10)
+### Development Setup
+1. Clone the repository
+2. Install .NET 6.0 SDK
+3. Open in Visual Studio 2022 or VS Code
+4. Build and run the project
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- **Anthropic** for Claude AI integration and security guidance
-- **Perplexity** for real-time web research capabilities
-- **Microsoft** for Windows Package Manager and .NET security features
-- **Security Community** for vulnerability research and best practices
-- **Contributors** for code reviews and security improvements
+- **Anthropic**: Claude AI models and API
+- **AWS**: Bedrock service and infrastructure
+- **Perplexity**: Research and data gathering
+- **Microsoft**: winget package manager
+- **Community**: Contributors and feedback
 
 ## 📞 Support
 
-For issues, questions, or feature requests, please open an issue on GitHub.
+- **Issues**: [GitHub Issues](https://github.com/yourusername/WingetWizard/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/WingetWizard/discussions)
+- **Documentation**: [Wiki](https://github.com/yourusername/WingetWizard/wiki)
 
 ---
 
-## 🔒 Security Notice
+**Built with ❤️ using .NET 6, Windows Forms, and cutting-edge AI technology**
 
-WingetWizard has undergone comprehensive security hardening including:
-- **CWE-78**: Command injection prevention
-- **CWE-22**: Path traversal protection  
-- **CWE-362**: Thread safety implementation
-- **CWE-209**: Information exposure mitigation
-- **CWE-311**: Secure API key storage
-
-For security issues, please report responsibly through GitHub issues.
-
----
-
-**Built with ❤️ and 🔒 by Mark Relph (GeekSuave Labs) using Q Developer, Claude and Cursor - WingetWizard makes secure package management magical! 🧿**
+*WingetWizard v2.1 - The intelligent way to manage Windows packages*

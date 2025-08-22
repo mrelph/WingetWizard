@@ -3,27 +3,14 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <PublishReadyToRun>true</PublishReadyToRun>
-    <ApplicationIcon>Logo.ico</ApplicationIcon>
-    <AssemblyTitle>WingetWizard</AssemblyTitle>
-    <AssemblyDescription>AI-Enhanced Windows Package Manager</AssemblyDescription>
-    <AssemblyCompany>GeekSuave Labs</AssemblyCompany>
-    <AssemblyProduct>WingetWizard</AssemblyProduct>
-    <AssemblyCopyright>Copyright © 2024 Mark Relph, GeekSuave Labs. All rights reserved.</AssemblyCopyright>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <FileVersion>2.0.0.0</FileVersion>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="config.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
 </Project>
