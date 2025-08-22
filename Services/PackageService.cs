@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UpgradeApp.Models;
+using UpgradeApp.Utils;
 
 namespace UpgradeApp.Services
 {
@@ -15,32 +16,174 @@ namespace UpgradeApp.Services
     /// </summary>
     public class PackageService
     {
+        private static readonly HashSet<string> AllowedWingetCommands = new()
+        {
+            "list", "upgrade", "install", "uninstall", "repair", "search", "source"
+        };
+        
+        private static readonly HashSet<string> AllowedParameters = new()
+        {
+            "--id", "--source", "--verbose", "--accept-source-agreements", 
+            "--accept-package-agreements", "--silent", "--all", "--help"
+        };
+        
+        private static readonly Regex DangerousPatternRegex = new(
+            @"[;&|><$`(){}\\""']|exec|eval|system|shell|cmd|powershell\.exe|net\.exe|reg\.exe|sc\.exe|wmic\.exe",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled
+        );
+
+        public PackageService()
+        {
+        }
         /// <summary>
-        /// Executes a PowerShell command and returns the result
+        /// Executes a secure winget command and returns the result
+        /// </summary>
+        /// <param name="command">The winget command to execute</param>
+        /// <param name="arguments">Safe arguments for the command</param>
+        /// <returns>The command output as a string</returns>
+        private (bool Success, string Output) ExecuteSecureWingetCommand(string command, params string[] arguments)
+        {
+            try
+            {
+                // Validate command
+                if (!IsValidWingetCommand(command, arguments))
+                {
+                                    var errorMessage = "Invalid or potentially dangerous command detected";
+                System.Diagnostics.Debug.WriteLine($"Security Warning: {errorMessage} - Command: {command}");
+                return (false, errorMessage);
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "winget.exe",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                psi.ArgumentList.Add(command);
+                foreach (var arg in arguments.Where(a => !string.IsNullOrWhiteSpace(a)))
+                {
+                    psi.ArgumentList.Add(arg);
+                }
+
+                System.Diagnostics.Debug.WriteLine($"Executing secure winget command: {command} with {arguments.Length} arguments");
+
+                using var process = Process.Start(psi);
+                if (process == null)
+                {
+                    return (false, "Failed to start winget process");
+                }
+
+                var output = process.StandardOutput.ReadToEnd();
+                var error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                var success = process.ExitCode == 0;
+                var result = success ? output : $"{output}\n{error}".Trim();
+
+                System.Diagnostics.Debug.WriteLine($"Winget command completed - Command: {command}, Success: {success}, ExitCode: {process.ExitCode}");
+
+                return (success, result);
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = $"Error executing winget command: {ex.Message}";
+                System.Diagnostics.Debug.WriteLine($"Secure winget command execution failed - Command: {command}, Error: {ex.Message}");
+                return (false, errorMessage);
+            }
+        }
+
+        /// <summary>
+        /// Validates that a winget command and its arguments are safe
+        /// </summary>
+        private bool IsValidWingetCommand(string command, string[] arguments)
+        {
+            // Check if command is in whitelist
+            if (!AllowedWingetCommands.Contains(command.ToLowerInvariant()))
+            {
+                return false;
+            }
+
+            // Check for dangerous patterns in command
+            if (DangerousPatternRegex.IsMatch(command))
+            {
+                return false;
+            }
+
+            // Validate all arguments
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                var arg = arguments[i];
+                
+                // Skip empty arguments
+                if (string.IsNullOrWhiteSpace(arg))
+                    continue;
+
+                // Check for dangerous patterns
+                if (DangerousPatternRegex.IsMatch(arg))
+                {
+                    return false;
+                }
+
+                // If it's a parameter flag, validate it's allowed
+                if (arg.StartsWith("--"))
+                {
+                    if (!AllowedParameters.Contains(arg.ToLowerInvariant()))
+                    {
+                        return false;
+                    }
+                }
+                // If it's a package ID or value, validate format
+                else if (i > 0 && arguments[i-1].StartsWith("--"))
+                {
+                    // Validate package IDs and values
+                    if (!IsValidParameterValue(arguments[i-1], arg))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Validates parameter values based on the parameter type
+        /// </summary>
+        private bool IsValidParameterValue(string parameter, string value)
+        {
+            var errors = new List<string>();
+            
+            return parameter.ToLowerInvariant() switch
+            {
+                "--id" => ValidationUtils.ValidatePackageName(value, errors) != null,
+                "--source" => value.ToLowerInvariant() is "winget" or "msstore" or "all",
+                _ => !DangerousPatternRegex.IsMatch(value) && value.Length <= 100
+            };
+        }
+
+        /// <summary>
+        /// Legacy method for backward compatibility - now uses secure execution
         /// </summary>
         /// <param name="command">The PowerShell command to execute</param>
         /// <returns>The command output as a string</returns>
+        [Obsolete("Use ExecuteSecureWingetCommand instead")]
         public string RunPowerShell(string command)
         {
-            if (string.IsNullOrWhiteSpace(command)) 
-                return "Command is null or empty";
-            
-            var validCommands = new[] { "winget list", "winget upgrade", "winget install", "winget uninstall", "winget repair" };
-            if (!validCommands.Any(cmd => command.TrimStart().StartsWith(cmd, StringComparison.OrdinalIgnoreCase)))
+            // Parse the legacy command format and convert to secure execution
+            var parts = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2 || !parts[0].Equals("winget", StringComparison.OrdinalIgnoreCase))
+            {
                 return "Invalid command format";
+            }
+
+            var wingetCommand = parts[1];
+            var arguments = parts.Skip(2).ToArray();
             
-            var psi = new ProcessStartInfo 
-            { 
-                FileName = "powershell.exe", 
-                RedirectStandardOutput = true, 
-                UseShellExecute = false, 
-                CreateNoWindow = true 
-            };
-            psi.ArgumentList.Add("-Command"); 
-            psi.ArgumentList.Add(command);
-            
-            using var process = Process.Start(psi);
-            return process?.StandardOutput.ReadToEnd() ?? "Process failed";
+            var result = ExecuteSecureWingetCommand(wingetCommand, arguments);
+            return result.Success ? result.Output : $"Error: {result.Output}";
         }
 
         /// <summary>
@@ -53,11 +196,19 @@ namespace UpgradeApp.Services
         {
             return await Task.Run(() =>
             {
-                var sourceParam = source == "all" ? "" : $"--source {source}";
-                var command = $"winget list {sourceParam}{(verbose ? " --verbose" : "")}";
+                var arguments = new List<string>();
+                if (source != "all")
+                {
+                    arguments.Add("--source");
+                    arguments.Add(source);
+                }
+                if (verbose)
+                {
+                    arguments.Add("--verbose");
+                }
                 
-                var output = RunPowerShell(command);
-                var lines = output?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+                var result = ExecuteSecureWingetCommand("list", arguments.ToArray());
+                var lines = result.Output?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
                 var apps = new List<UpgradableApp>();
                 bool headerFound = false;
                 
@@ -75,7 +226,7 @@ namespace UpgradeApp.Services
                     if (line.Trim().Length == 0 || line.StartsWith("-")) 
                         continue;
 
-                    var parts = Regex.Split(line.Trim(), @"\s{2,}");
+                    var parts = Regex.Split(line.Trim(), @"\s{2,}", RegexOptions.None, TimeSpan.FromSeconds(1));
                     if (parts.Length >= 3)
                     {
                         var app = new UpgradableApp
@@ -105,11 +256,19 @@ namespace UpgradeApp.Services
         {
             return await Task.Run(() =>
             {
-                var sourceParam = source == "all" ? "" : $"--source {source}";
-                var command = $"winget upgrade {sourceParam}{(verbose ? " --verbose" : "")}";
+                var arguments = new List<string>();
+                if (source != "all")
+                {
+                    arguments.Add("--source");
+                    arguments.Add(source);
+                }
+                if (verbose)
+                {
+                    arguments.Add("--verbose");
+                }
                 
-                var output = RunPowerShell(command);
-                var lines = output?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+                var result = ExecuteSecureWingetCommand("upgrade", arguments.ToArray());
+                var lines = result.Output?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
                 var apps = new List<UpgradableApp>();
                 bool headerFound = false;
                 
@@ -127,7 +286,7 @@ namespace UpgradeApp.Services
                     if (line.Trim().Length == 0 || line.StartsWith("-")) 
                         continue;
 
-                    var parts = Regex.Split(line.Trim(), @"\s{2,}");
+                    var parts = Regex.Split(line.Trim(), @"\s{2,}", RegexOptions.None, TimeSpan.FromSeconds(1));
                     if (parts.Length >= 4)
                     {
                         var name = parts[0];
@@ -171,11 +330,21 @@ namespace UpgradeApp.Services
         {
             return await Task.Run(() =>
             {
-                var command = $"winget upgrade --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{(verbose ? " --verbose" : "")}";
-                var result = RunPowerShell(command);
-                var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase);
+                var arguments = new List<string>
+                {
+                    "--id", packageId,
+                    "--accept-source-agreements",
+                    "--accept-package-agreements",
+                    "--silent"
+                };
                 
-                return (success, result);
+                if (verbose)
+                {
+                    arguments.Add("--verbose");
+                }
+                
+                var result = ExecuteSecureWingetCommand("upgrade", arguments.ToArray());
+                return (result.Success, result.Output);
             });
         }
 
@@ -188,12 +357,21 @@ namespace UpgradeApp.Services
         {
             return await Task.Run(() =>
             {
-                var verboseParam = verbose ? " --verbose" : "";
-                var command = $"winget upgrade --all --accept-source-agreements --accept-package-agreements --silent{verboseParam}";
-                var result = RunPowerShell(command);
-                var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase);
+                var arguments = new List<string>
+                {
+                    "--all",
+                    "--accept-source-agreements",
+                    "--accept-package-agreements",
+                    "--silent"
+                };
                 
-                return (success, result);
+                if (verbose)
+                {
+                    arguments.Add("--verbose");
+                }
+                
+                var result = ExecuteSecureWingetCommand("upgrade", arguments.ToArray());
+                return (result.Success, result.Output);
             });
         }
 
@@ -207,11 +385,21 @@ namespace UpgradeApp.Services
         {
             return await Task.Run(() =>
             {
-                var command = $"winget install --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{(verbose ? " --verbose" : "")}";
-                var result = RunPowerShell(command);
-                var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase);
+                var arguments = new List<string>
+                {
+                    "--id", packageId,
+                    "--accept-source-agreements",
+                    "--accept-package-agreements",
+                    "--silent"
+                };
                 
-                return (success, result);
+                if (verbose)
+                {
+                    arguments.Add("--verbose");
+                }
+                
+                var result = ExecuteSecureWingetCommand("install", arguments.ToArray());
+                return (result.Success, result.Output);
             });
         }
 
@@ -225,11 +413,19 @@ namespace UpgradeApp.Services
         {
             return await Task.Run(() =>
             {
-                var command = $"winget uninstall --id \"{packageId}\" --silent{(verbose ? " --verbose" : "")}";
-                var result = RunPowerShell(command);
-                var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase);
+                var arguments = new List<string>
+                {
+                    "--id", packageId,
+                    "--silent"
+                };
                 
-                return (success, result);
+                if (verbose)
+                {
+                    arguments.Add("--verbose");
+                }
+                
+                var result = ExecuteSecureWingetCommand("uninstall", arguments.ToArray());
+                return (result.Success, result.Output);
             });
         }
 
@@ -243,11 +439,21 @@ namespace UpgradeApp.Services
         {
             return await Task.Run(() =>
             {
-                var command = $"winget repair --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{(verbose ? " --verbose" : "")}";
-                var result = RunPowerShell(command);
-                var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase);
+                var arguments = new List<string>
+                {
+                    "--id", packageId,
+                    "--accept-source-agreements",
+                    "--accept-package-agreements",
+                    "--silent"
+                };
                 
-                return (success, result);
+                if (verbose)
+                {
+                    arguments.Add("--verbose");
+                }
+                
+                var result = ExecuteSecureWingetCommand("repair", arguments.ToArray());
+                return (result.Success, result.Output);
             });
         }
 

@@ -1,26 +1,26 @@
 ===============================================================================
-                    UPGRADEBOT - DEPLOYMENT & INSTALLATION GUIDE
+                    WINGETWIZARD - DEPLOYMENT & INSTALLATION GUIDE
 ===============================================================================
 
 SYSTEM REQUIREMENTS
 -------------------
 - Windows 10 version 1809 or later / Windows 11
-- .NET 6 Runtime (included in self-contained build)
+- .NET 6.0 Runtime (included in self-contained build)
 - Internet connection for AI features and package updates
 - Administrator privileges for package installations/uninstalls
 
 QUICK DEPLOYMENT (RECOMMENDED)
 ------------------------------
 1. Build the application:
-   dotnet publish -c Release --self-contained true -r win-x64
+   dotnet publish -c Release --self-contained true -r win-x64 -p:PublishSingleFile=true
 
 2. Copy these files to target machine:
-   - UpgradeApp.exe (from bin\Release\net6.0-windows\win-x64\publish\)
+   - WingetWizard.exe (from bin\Release\net6.0-windows\win-x64\publish\)
    - config.json (with your API keys)
 
-3. Place both files in the same directory (e.g., C:\Tools\UpgradeBot\)
+3. Place both files in the same directory (e.g., C:\Tools\WingetWizard\)
 
-4. Run UpgradeApp.exe
+4. Run WingetWizard.exe
 
 DETAILED INSTALLATION STEPS
 ---------------------------
@@ -29,42 +29,46 @@ STEP 1: BUILD THE APPLICATION
 -----------------------------
 From the project directory, run:
 > dotnet build -c Release
-> dotnet publish -c Release --self-contained true -r win-x64
+> dotnet publish -c Release --self-contained true -r win-x64 -p:PublishSingleFile=true
 
-This creates a self-contained executable (~100MB) with all dependencies.
+This creates a self-contained executable (~138MB) with all dependencies.
 
 STEP 2: PREPARE CONFIGURATION
 -----------------------------
 Ensure config.json contains your API keys:
 {
   "AnthropicApiKey": "sk-ant-api03-...",
-  "PerplexityApiKey": "pplx-..."
+  "PerplexityApiKey": "pplx-...",
+  "BedrockApiKey": "your-bedrock-api-key",
+  "AwsAccessKeyId": "your-aws-access-key",
+  "AwsSecretAccessKey": "your-aws-secret-key",
+  "AwsRegion": "us-east-1"
 }
 
 STEP 3: DEPLOYMENT OPTIONS
 --------------------------
 
 OPTION A: PORTABLE INSTALLATION
-- Copy UpgradeApp.exe and config.json to any folder
+- Copy WingetWizard.exe and config.json to any folder
 - No installation required
 - Run directly from any location
 
 OPTION B: SYSTEM-WIDE INSTALLATION
-- Create folder: C:\Program Files\UpgradeBot\
+- Create folder: C:\Program Files\WingetWizard\
 - Copy files to this location
-- Create desktop shortcut to UpgradeApp.exe
+- Create desktop shortcut to WingetWizard.exe
 - Add to Windows PATH (optional)
 
 OPTION C: USER-SPECIFIC INSTALLATION
-- Create folder: %USERPROFILE%\AppData\Local\UpgradeBot\
+- Create folder: %USERPROFILE%\AppData\Local\WingetWizard\
 - Copy files to this location
 - No admin privileges required
 
 STEP 4: FIRST RUN CONFIGURATION
 -------------------------------
-1. Launch UpgradeApp.exe
+1. Launch WingetWizard.exe
 2. Go to Settings > AI Settings
-3. Select preferred AI provider (Perplexity recommended)
+3. Select preferred AI provider (Claude, Bedrock, or Perplexity)
 4. Go to Settings > UI Mode
 5. Choose Simple or Advanced mode
 6. Test functionality with "Check Updates"
@@ -80,9 +84,9 @@ GROUP POLICY DEPLOYMENT:
 
 SILENT DEPLOYMENT SCRIPT:
 @echo off
-mkdir "C:\Program Files\UpgradeBot"
-copy "\\server\share\UpgradeApp.exe" "C:\Program Files\UpgradeBot\"
-copy "\\server\share\config.json" "C:\Program Files\UpgradeBot\"
+mkdir "C:\Program Files\WingetWizard"
+copy "\\server\share\WingetWizard.exe" "C:\Program Files\WingetWizard\"
+copy "\\server\share\config.json" "C:\Program Files\WingetWizard\"
 echo Deployment complete
 
 MSI INSTALLER (ADVANCED):
@@ -96,12 +100,14 @@ CONFIGURATION MANAGEMENT
 API KEY SETUP:
 - Anthropic Claude: https://console.anthropic.com/
 - Perplexity: https://www.perplexity.ai/settings/api
+- AWS Bedrock: https://console.aws.amazon.com/bedrock/
 
 SETTINGS FILE (auto-generated):
 settings.json stores user preferences:
 - UI mode selection
 - AI provider choice
 - Window positions
+- Theme preferences
 
 TROUBLESHOOTING
 ---------------
@@ -111,30 +117,34 @@ COMMON ISSUES:
 2. "Winget not found" - Install Windows Package Manager from Microsoft Store
 3. "Access denied" - Run as administrator for system-wide package operations
 4. "Network error" - Check internet connection and firewall settings
+5. "Bedrock connection failed" - Verify AWS credentials and region selection
 
 LOG FILES:
 - Built-in logging panel shows real-time operations
 - Enable verbose mode for detailed troubleshooting
 - Export logs for support analysis
+- Health check feature for system diagnostics
 
 SECURITY CONSIDERATIONS
 -----------------------
-- API keys stored in plain text config.json
+- API keys stored encrypted using Windows DPAPI
 - Exclude config.json from version control
 - Use environment-specific API keys
 - Restrict file permissions on config.json
 - Consider encrypted storage for production
+- All credentials encrypted at rest
 
 UPDATES & MAINTENANCE
 --------------------
-- Replace UpgradeApp.exe with new version
+- Replace WingetWizard.exe with new version
 - Preserve config.json and settings.json
 - Test in development environment first
 - Backup configuration before updates
+- Health check after updates
 
 UNINSTALLATION
 --------------
-1. Close UpgradeApp.exe
+1. Close WingetWizard.exe
 2. Delete installation folder
 3. Remove shortcuts
 4. Clean up settings.json (optional)
@@ -145,9 +155,10 @@ SUPPORT
 - Review logs for error details
 - Verify API key validity and quotas
 - Test with simple operations first
+- Use health check feature for diagnostics
 
 ===============================================================================
-Version: 2.0
-Last Updated: 2024
+Version: 2.1
+Last Updated: January 2025
 For technical support, review the DOCUMENTATION.md file
 ===============================================================================

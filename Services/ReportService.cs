@@ -17,7 +17,16 @@ namespace UpgradeApp.Services
 
         public ReportService(string reportsDirectory)
         {
-            _reportsDirectory = reportsDirectory;
+            // Validate and sanitize the reports directory path
+            if (string.IsNullOrWhiteSpace(reportsDirectory))
+                throw new ArgumentException("Reports directory cannot be null or empty");
+            
+            var fullPath = Path.GetFullPath(reportsDirectory);
+            var basePath = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
+            if (!fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("Reports directory must be within application directory");
+            
+            _reportsDirectory = fullPath;
             _savedReports = new Dictionary<string, string>();
             InitializeReportsDirectory();
         }
@@ -278,7 +287,8 @@ namespace UpgradeApp.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to save package report for {packageName}: {ex.Message}");
+                var safePackageName = System.Net.WebUtility.HtmlEncode(packageName);
+                System.Diagnostics.Debug.WriteLine($"Failed to save package report for {safePackageName}: {ex.Message}");
                 return false;
             }
         }

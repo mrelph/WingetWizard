@@ -19,15 +19,25 @@ namespace UpgradeApp.Utils
         {
             try
             {
-                if (!Directory.Exists(path))
+                if (string.IsNullOrWhiteSpace(path))
+                    return false;
+                
+                // Validate path to prevent traversal attacks
+                var fullPath = Path.GetFullPath(path);
+                var basePath = Path.GetFullPath(GetApplicationBaseDirectory());
+                if (!fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+                    return false;
+                
+                if (!Directory.Exists(fullPath))
                 {
-                    Directory.CreateDirectory(path);
+                    Directory.CreateDirectory(fullPath);
                 }
                 return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to create directory {path}: {ex.Message}");
+                var safePath = System.Net.WebUtility.HtmlEncode(path);
+                System.Diagnostics.Debug.WriteLine($"Failed to create directory {safePath}: {ex.Message}");
                 return false;
             }
         }
@@ -69,15 +79,37 @@ namespace UpgradeApp.Utils
         {
             try
             {
-                if (File.Exists(filePath))
+                if (string.IsNullOrWhiteSpace(filePath))
+                    return defaultContent;
+                
+                // Validate path to prevent traversal attacks
+                var fullPath = Path.GetFullPath(filePath);
+                var basePath = Path.GetFullPath(GetApplicationBaseDirectory());
+                if (!fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+                    return defaultContent;
+                
+                if (File.Exists(fullPath))
                 {
-                    return File.ReadAllText(filePath, Encoding.UTF8);
+                    return File.ReadAllText(fullPath, Encoding.UTF8);
                 }
                 return defaultContent;
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to read file {filePath}: {ex.Message}");
+                return defaultContent;
+            }
+            catch (FileNotFoundException)
+            {
+                return defaultContent;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return defaultContent;
+            }
+            catch (IOException ex)
+            {
+                var safeFilePath = System.Net.WebUtility.HtmlEncode(filePath);
+                System.Diagnostics.Debug.WriteLine($"Failed to read file {safeFilePath}: {ex.Message}");
                 return defaultContent;
             }
         }
@@ -120,6 +152,9 @@ namespace UpgradeApp.Utils
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(filePath))
+                    return "Invalid file path";
+                    
                 if (File.Exists(filePath))
                 {
                     var fileInfo = new FileInfo(filePath);
@@ -129,7 +164,8 @@ namespace UpgradeApp.Utils
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to get file size for {filePath}: {ex.Message}");
+                var safeFilePath = System.Net.WebUtility.HtmlEncode(filePath);
+                System.Diagnostics.Debug.WriteLine($"Failed to get file size for {safeFilePath}: {ex.Message}");
                 return "Unknown";
             }
         }
@@ -141,6 +177,9 @@ namespace UpgradeApp.Utils
         /// <returns>Human-readable size string</returns>
         public static string FormatFileSize(long bytes)
         {
+            if (bytes < 0)
+                return "0 B";
+                
             string[] sizes = { "B", "KB", "MB", "GB", "TB" };
             double len = bytes;
             int order = 0;
@@ -210,6 +249,13 @@ namespace UpgradeApp.Utils
         {
             if (paths == null || paths.Length == 0)
                 return string.Empty;
+            
+            // Validate all path elements are not null/empty
+            foreach (var path in paths)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                    throw new ArgumentException("Path elements cannot be null or empty");
+            }
 
             var result = paths[0];
             for (int i = 1; i < paths.Length; i++)

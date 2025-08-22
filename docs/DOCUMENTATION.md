@@ -7,10 +7,11 @@ WingetWizard is a beautifully designed, Claude-inspired Windows desktop applicat
 ## 🎯 Purpose
 
 - **Modern User Experience**: Claude AI-inspired interface with sophisticated design and intuitive interactions
-- **Intelligent Package Management**: Enhanced AI prompting with structured 7-section analysis and visual reporting
+- **Enterprise Security**: DPAPI encryption, command injection prevention, and OWASP-compliant validation
+- **Intelligent Package Management**: Enhanced AI prompting with comprehensive upgrade analysis and visual reporting
 - **Professional Aesthetics**: Time-based welcome screens, elegant progress indicators, and rich text displays
 - **Enterprise Decision Support**: Color-coded markdown reports with emoji indicators and executive summaries
-- **Seamless Workflow**: Smart welcome cards, hidden-by-default logs, and context-aware UI transitions
+- **Secure Operations**: Multi-layered security with comprehensive audit logging and threat detection
 
 ## 🏗️ Modular Architecture
 
@@ -22,25 +23,36 @@ WingetWizard is a beautifully designed, Claude-inspired Windows desktop applicat
 ├─────────────────────────────────────────────────────────────┤
 │  UI Layer (Windows Forms)                                  │
 │  ├── MainForm.cs (Primary Interface with Service DI)       │
-│  ├── SpinningProgressForm.cs (Custom Progress Dialogs)     │
 │  └── Settings Dialogs (AI/UI Configuration)                │
 ├─────────────────────────────────────────────────────────────┤
 │  Models Layer                                              │
 │  └── UpgradableApp.cs (Package Data Model)                 │
 ├─────────────────────────────────────────────────────────────┤
 │  Services Layer (Business Logic)                           │
-│  ├── PackageService.cs (Winget Operations)                 │
+│  ├── PackageService.cs (Secure Winget Operations)          │
 │  ├── AIService.cs (Claude + Perplexity Integration)        │
+│  ├── BedrockService.cs (AWS Bedrock Integration)           │
+│  ├── BedrockModelDiscoveryService.cs (Model Discovery)     │
 │  ├── ReportService.cs (AI Report Management)               │
-│  └── SettingsService.cs (Configuration Management)         │
+│  ├── SettingsService.cs (Configuration Management)         │
+│  ├── SecureSettingsService.cs (DPAPI Encryption)           │
+│  ├── HealthCheckService.cs (System Health Monitoring)      │
+│  ├── PerformanceMetricsService.cs (System Monitoring)      │
+│  ├── ConfigurationValidationService.cs (Settings Validation)│
+│  ├── CachingService.cs (Multi-Tier Caching)                │
+│  ├── SearchFilterService.cs (Advanced Search & Filtering)  │
+│  └── VirtualizationService.cs (Large Dataset Handling)     │
 ├─────────────────────────────────────────────────────────────┤
 │  Utilities Layer                                           │
-│  └── FileUtils.cs (File Operations & Helpers)              │
+│  ├── FileUtils.cs (Safe File Operations & Helpers)         │
+│  ├── ValidationUtils.cs (Advanced Security Validation)     │
+│  └── AppConstants.cs (Centralized Application Constants)    │
 ├─────────────────────────────────────────────────────────────┤
 │  External Integrations                                     │
 │  ├── Windows Package Manager (winget)                      │
 │  ├── Anthropic Claude API (Knowledge-based AI)             │
 │  ├── Perplexity API (Real-time Web Research)               │
+│  ├── AWS Bedrock (Enterprise AI Platform)                  │
 │  └── PowerShell Execution Engine                           │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -75,13 +87,13 @@ public MainForm()
 
 ### Technology Stack
 
-- **Framework**: .NET 6 Windows Forms with modern UI enhancements
+- **Framework**: .NET 6.0 Windows Forms with modern UI enhancements
 - **Architecture**: Modular service-based design with dependency injection
 - **Design Language**: Claude AI-inspired interface with sophisticated color palette
 - **Typography**: Calibri font family with intelligent fallback system (Calibri → Segoe UI → Generic Sans)
-- **Progress System**: Custom spinning forms with animated logo and real-time status updates
+- **Progress System**: In-UI progress bar with real-time status updates (no modal popups)
 - **Rich Text Engine**: Color-coded markdown rendering with emoji support and visual hierarchy
-- **AI Integration**: Enhanced prompting system with structured 7-section analysis templates
+- **AI Integration**: Enhanced prompting system with comprehensive upgrade analysis templates
 - **Export System**: Professional markdown reports with metadata, executive summaries, and timestamps
 - **Configuration**: JSON-based settings with secure API key management
 
@@ -147,6 +159,12 @@ private async Task<string> GetAIRecommendation(UpgradableApp app)
 - **Strengths**: Current information, official documentation access
 - **Use Case**: Latest release notes, security advisories, community feedback
 
+#### AWS Bedrock Integration (Enterprise)
+- **Models**: Claude 3.7 Sonnet, Claude Sonnet 4, Claude Opus 4, Llama 3.3 70B
+- **Approach**: Enterprise-grade AI platform with multiple model options
+- **Strengths**: High performance, enterprise security, model variety
+- **Use Case**: Production AI workloads and enterprise deployments
+
 ### Modern UI Architecture
 
 #### Claude-Inspired Design System
@@ -155,20 +173,6 @@ private async Task<string> GetAIRecommendation(UpgradableApp app)
 - **Smart Visibility**: Dynamic welcome screen that appears when empty and hides when content loads
 - **Typography Hierarchy**: Modern Calibri fonts with sizes from 9pt to 26pt for clear visual organization
 - **Card-Based Actions**: Elegant button spacing with subtle borders and sophisticated hover effects
-
-#### Enhanced Progress Indicators
-```csharp
-public class SpinningProgressForm : Form
-{
-    private readonly System.Windows.Forms.Timer timer = new();
-    private int rotationAngle = 0;
-    private readonly Image iconImage;
-    
-    // Animated spinning logo centered on parent window
-    // Real-time status messages during operations
-    // Professional styling with dark theme integration
-}
-```
 
 #### Rich Text Rendering System
 - **Color-Coded Content**: Semantic colors for different types of information (🟢🟡🔴🟣)
@@ -203,7 +207,7 @@ public class SpinningProgressForm : Form
 - 📄 **Persistent AI Reports**: Individual package reports automatically saved with timestamped filenames in AI_Reports directory
 - 🔗 **Status Column Integration**: Clickable "📄 View Report" links in status column for instant access to saved reports
 - 📁 **Report Management**: Automatic creation of AI_Reports directory with organized file storage
-- 🎯 **7-Section Analysis Framework**:
+- 🎯 **Comprehensive Analysis Framework**:
   - 🎯 **Executive Summary** with recommendation indicators (🟢🟡🔴)
   - 🔄 **Version Changes** with update type classification
   - ⚡ **Key Improvements** categorized by feature type
@@ -212,18 +216,41 @@ public class SpinningProgressForm : Form
   - 📅 **Timeline Recommendations** with urgency levels
   - 🎯 **Action Items** with checklist format
 - 📤 **Professional Export**: Auto-generated filenames with timestamps, metadata, and executive summaries
-- 🔍 **Dual AI Providers**: Claude AI (knowledge-based) and Perplexity (real-time research)
+- 🔍 **Multi AI Providers**: Claude AI (knowledge-based), Perplexity (real-time research), AWS Bedrock (enterprise)
 - 🎨 **Visual Indicators**: Emoji-based risk levels and recommendation types throughout interface
-- 📈 **Progress Tracking**: Spinning logo indicators with real-time package analysis status
+- 📈 **Progress Tracking**: In-UI progress bar with real-time package analysis status
 - 💾 **Rich Text Display**: Color-coded reports with sophisticated typography and formatting
 - 🔄 **Persistent Access**: Reports remain accessible even after closing and reopening the application
+
+### 📊 Progress System
+
+The application features a modern, non-intrusive progress tracking system:
+
+#### **In-UI Progress Bar**
+- **Location**: Top of main window, below header
+- **Style**: Marquee-style progress bar with theme-aware colors
+- **Visibility**: Automatically shows/hides during operations
+- **Status Updates**: Real-time text updates above progress bar
+- **Theme Integration**: Adapts to Windows dark/light mode
+
+#### **Progress States**
+- **Ready**: Default state when no operations are running
+- **Operation Start**: Progress bar appears with initial status message
+- **Real-time Updates**: Status text updates during operation phases
+- **Completion**: Progress bar automatically hides, status returns to "Ready"
+
+#### **Key Benefits**
+- **No Modal Popups**: Operations continue in background without blocking UI
+- **Theme Consistency**: Progress colors match current Windows theme
+- **User Control**: Users can continue interacting with other parts of the app
+- **Clean Interface**: Progress indicator integrates seamlessly with main UI
 
 ### 📤 Enhanced Export & Logging
 - 📤 **Professional Export System**: Auto-generated filenames with timestamps and package counts
 - 💾 **Rich Markdown Reports**: Beautifully formatted AI analysis with metadata, executive summaries, and visual hierarchy
 - 📄 **Smart Logging Interface**: Hidden-by-default collapsible panel for cleaner user experience
 - 📊 **Modern Terminal Styling**: Green-on-black logging with Consolas font for professional appearance
-- 📈 **Real-time Status Updates**: Comprehensive operation tracking with spinning progress indicators
+- 📈 **Real-time Status Updates**: Comprehensive operation tracking with in-UI progress indicators
 - ⚙️ **Enhanced Help System**: Rich text help dialogs with colors, emojis, and improved typography
 - 🎨 **About Dialog**: Professional about window with feature highlights and development attribution
 
@@ -232,18 +259,135 @@ public class SpinningProgressForm : Form
 - 🎴 **Action Cards**: Four elegant suggestion cards for common operations (Check Updates, AI Research, List Apps, Export)
 - 🎨 **Sophisticated Color Palette**: Claude blue, success green, AI purple, accent orange with refined gray tones
 - 🔄 **Smart Visibility**: Dynamic welcome screen that appears when empty and hides when content loads
-- ✨ **Spinning Progress**: Animated logo indicators that center perfectly on the main window during operations
+- ✨ **In-UI Progress**: Sleek progress bar that shows operation status without modal popups
 - 🎯 **Modern Typography**: Calibri font family with intelligent fallbacks for enhanced readability
 - 🖼️ **Card-Based Design**: Elegant button spacing with subtle borders and sophisticated hover effects
 - 📱 **Professional Layout**: Increased spacing, hidden-by-default logs, and refined container styling
 - 🎨 **Rich Text Help**: Color-coded help dialogs with emojis, improved typography, and visual hierarchy
+
+## 🔒 Enterprise Security Architecture
+
+### 🛡️ Multi-Layer Security Model
+
+WingetWizard implements comprehensive enterprise-grade security measures designed to protect against modern threats and ensure safe package management operations.
+
+#### **Layer 1: Input Validation** 
+- **OWASP Top 10 Protection**: Comprehensive validation against common vulnerabilities
+- **Advanced Pattern Detection**: 80+ dangerous pattern recognition including XSS, SQL injection, command injection
+- **Polyglot Attack Prevention**: Multi-vector attack detection and mitigation
+- **Context-Aware Validation**: Different validation rules based on input context (package IDs, file names, URLs, etc.)
+
+#### **Layer 2: Command Execution Security**
+- **Whitelist-Based Validation**: Only approved winget commands and parameters allowed
+- **Zero-Shell Execution**: Direct process execution without shell involvement
+- **Argument List Safety**: Secure argument passing using ProcessStartInfo.ArgumentList
+- **Command Injection Prevention**: Comprehensive pattern detection and blocking
+
+#### **Layer 3: Data Protection**
+- **Windows DPAPI Encryption**: API keys encrypted using Windows Data Protection API
+- **User-Specific Encryption**: Keys encrypted per Windows user account
+- **Secure Storage**: Protected configuration files with integrity validation
+- **Memory Safety**: Proper credential lifecycle management
+
+#### **Layer 4: Audit & Monitoring**
+- **Security Event Logging**: Comprehensive audit trail for all security operations
+- **Performance Monitoring**: System resource tracking and anomaly detection
+- **Error Handling**: Security-aware exception management
+- **Threat Detection**: Real-time monitoring of suspicious activities
+
+### 🔐 Security Implementations
+
+#### **API Key Encryption (SecureSettingsService)**
+```csharp
+// Windows DPAPI encryption implementation
+var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
+var encryptedBytes = ProtectedData.Protect(plainTextBytes, null, DataProtectionScope.CurrentUser);
+return Convert.ToBase64String(encryptedBytes);
+```
+- **Encryption Method**: Windows Data Protection API (DPAPI)
+- **Scope**: CurrentUser (user-specific encryption)
+- **Storage**: Base64-encoded encrypted strings in JSON
+- **Thread Safety**: Synchronized access with lock mechanisms
+
+#### **Command Injection Prevention (PackageService)**
+```csharp
+// Secure command execution with whitelist validation
+private static readonly HashSet<string> AllowedWingetCommands = new()
+{
+    "list", "upgrade", "install", "uninstall", "repair", "search", "source"
+};
+```
+- **Validation**: Strict command and parameter whitelisting
+- **Execution**: Direct winget.exe process execution
+- **Pattern Detection**: Comprehensive dangerous pattern recognition
+- **Logging**: All command attempts logged for security audit
+
+#### **Advanced Input Validation (ValidationUtils)**
+```csharp
+// Multi-layered security validation
+private static readonly Regex DangerousPatternRegex = new(
+    @"[;&|><$`(){}\\""']|exec|eval|system|shell|cmd|powershell\.exe",
+    RegexOptions.IgnoreCase | RegexOptions.Compiled
+);
+```
+- **Pattern Recognition**: 80+ dangerous patterns including XSS, SQL injection, path traversal
+- **Encoding Detection**: URL/HTML/Unicode encoding attack prevention
+- **Polyglot Protection**: Multi-context attack detection
+- **Context Validation**: Input validation based on usage context
+
+### 🛡️ Security Compliance
+
+#### **OWASP Top 10 2021 Coverage**
+- ✅ **A01: Broken Access Control** - File path validation and application directory restrictions
+- ✅ **A02: Cryptographic Failures** - DPAPI encryption for sensitive credentials
+- ✅ **A03: Injection** - Comprehensive injection prevention (command, SQL, XSS, LDAP)
+- ✅ **A06: Vulnerable Components** - Input validation and dangerous pattern detection
+- ✅ **A09: Security Logging** - Comprehensive security audit trail
+
+#### **CWE (Common Weakness Enumeration) Mitigations**
+- ✅ **CWE-78**: OS Command Injection - Whitelist validation and secure execution
+- ✅ **CWE-22**: Path Traversal - Directory restriction and path validation
+- ✅ **CWE-79**: Cross-site Scripting - HTML tag removal and encoding detection
+- ✅ **CWE-89**: SQL Injection - Pattern detection and input sanitization
+- ✅ **CWE-94**: Code Injection - Polyglot attack detection and prevention
+- ✅ **CWE-311**: Missing Encryption - DPAPI implementation for credentials
+- ✅ **CWE-362**: Race Conditions - Thread synchronization and safe operations
+
+### 📊 Security Monitoring
+
+#### **Security Event Categories**
+- **Authentication Events**: API key operations, credential lifecycle
+- **Authorization Events**: Command execution attempts, file operations
+- **Input Validation Events**: Blocked inputs, pattern detections
+- **System Security Events**: Performance anomalies, error conditions
+
+#### **Security Metrics**
+- **Validation Failure Rate**: Percentage of blocked malicious inputs
+- **Command Rejection Rate**: Blocked command execution attempts
+- **Encryption Success Rate**: DPAPI operation reliability
+- **Performance Impact**: Security overhead measurements
+
+### 🚨 Security Features
+
+#### **Threat Protection**
+- **Command Injection Prevention**: Comprehensive pattern-based detection
+- **Path Traversal Protection**: Application directory restriction
+- **XSS Prevention**: HTML tag removal and encoding detection
+- **SQL Injection Protection**: Pattern recognition and blocking
+- **Buffer Overflow Protection**: Length validation and content analysis
+
+#### **Data Security**
+- **Credential Encryption**: Windows DPAPI with user-specific keys
+- **Secure Configuration**: Protected settings files with validation
+- **Memory Protection**: Safe credential handling and cleanup
+- **Audit Logging**: Complete security event trail
 
 ## 🛠️ Build Process
 
 ### Development Environment
 ```bash
 # Prerequisites
-- .NET 6 SDK
+- .NET 6.0 SDK
 - Windows 10/11
 - Visual Studio 2022 or VS Code
 - Git for version control
@@ -270,38 +414,50 @@ dotnet run
   <OutputType>WinExe</OutputType>
   <TargetFramework>net6.0-windows</TargetFramework>
   <UseWindowsForms>true</UseWindowsForms>
-  <PublishSingleFile>true</PublishSingleFile>
-  <SelfContained>true</SelfContained>
-  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <Nullable>enable</Nullable>
+  <ImplicitUsings>enable</ImplicitUsings>
+  <EnableWindowsTargeting>true</EnableWindowsTargeting>
 </PropertyGroup>
 ```
 
 ## 📁 Project Structure
 
 ```
-UpgradeApp/
+WingetWizard/
 ├── MainForm.cs             # Modern UI with service integration
 ├── Models/                 # Data models and entities
 │   └── UpgradableApp.cs    # Package data model
 ├── Services/               # Business logic services
-│   ├── PackageService.cs   # Package management operations
-│   ├── AIService.cs        # AI integration and recommendations
-│   ├── ReportService.cs    # AI report management
-│   └── SettingsService.cs  # Configuration and API keys
-├── UI/                     # User interface components
-│   └── SpinningProgressForm.cs # Custom progress dialogs
+│   ├── PackageService.cs       # Secure package management operations
+│   ├── AIService.cs            # AI integration and recommendations
+│   ├── BedrockService.cs       # AWS Bedrock integration
+│   ├── BedrockModelDiscoveryService.cs # Dynamic model discovery
+│   ├── ReportService.cs        # AI report management
+│   ├── SettingsService.cs      # Configuration and API keys
+│   ├── SecureSettingsService.cs # DPAPI-encrypted credential storage
+│   ├── HealthCheckService.cs   # System health monitoring
+│   ├── PerformanceMetricsService.cs # System performance monitoring
+│   ├── ConfigurationValidationService.cs # Settings validation
+│   ├── CachingService.cs       # Multi-tier intelligent caching
+│   ├── SearchFilterService.cs  # Advanced search and filtering
+│   └── VirtualizationService.cs # Large dataset handling
 ├── Utils/                  # Utility classes
-│   └── FileUtils.cs        # File operation helpers
-├── UpgradeApp.csproj       # Project configuration
+│   ├── FileUtils.cs        # Safe file operation helpers
+│   ├── ValidationUtils.cs  # Advanced security input validation
+│   └── AppConstants.cs     # Centralized application constants
+├── WingetWizard.csproj     # Project configuration
 ├── settings.json           # User preferences (auto-generated)
 ├── AI_Reports/             # Individual AI research reports (auto-generated)
 │   ├── PackageName1_YYYYMMDD_HHMMSS.md
 │   ├── PackageName2_YYYYMMDD_HHMMSS.md
 │   └── ...
 ├── README.md               # Basic project information
-├── DOCUMENTATION.md        # This comprehensive guide
-├── .gitignore             # Git exclusion rules
-└── installer.wxs          # WiX installer configuration
+├── docs/                   # Comprehensive documentation
+│   ├── DOCUMENTATION.md    # This technical guide
+│   ├── PROJECT_STRUCTURE.md # Architecture overview
+│   ├── SECURITY.md         # Security documentation
+│   └── DEPLOYMENT.txt      # Deployment instructions
+└── .gitignore             # Git exclusion rules
 ```
 
 ### 📋 Service Descriptions
@@ -319,9 +475,19 @@ UpgradeApp/
   - Thread-safe operations with comprehensive error handling
   
 - **`AIService.cs`**: AI integration and recommendation engine
-  - Supports both Claude AI and Perplexity API providers
+  - Supports Claude AI, Perplexity API, and AWS Bedrock providers
   - Methods: `GetAIRecommendationAsync()`, `MakeApiRequestAsync()`
-  - Structured prompting with 7-section analysis framework
+  - Structured prompting with comprehensive upgrade analysis framework
+  
+- **`BedrockService.cs`**: AWS Bedrock integration
+  - Enterprise AI platform with multiple model options
+  - Methods: `InvokeModelAsync()`, `ValidateCredentialsAsync()`
+  - Secure AWS authentication and request signing
+  
+- **`BedrockModelDiscoveryService.cs`**: Dynamic model discovery
+  - Automatic detection of available Bedrock models
+  - Methods: `DiscoverModelsAsync()`, `GetAvailableModelsAsync()`
+  - Region-specific model availability
   
 - **`ReportService.cs`**: AI report generation and management
   - Methods: `CreateMarkdownContent()`, `SaveIndividualPackageReports()`
@@ -333,16 +499,36 @@ UpgradeApp/
   - Secure API key storage and retrieval
   - JSON-based configuration persistence
 
+- **`HealthCheckService.cs`**: System health monitoring
+  - Methods: `PerformHealthCheckAsync()`, `CheckDiskSpace()`, `CheckMemoryUsage()`
+  - Comprehensive system diagnostics and health reporting
+  - Performance metrics and resource monitoring
+
+- **`ConfigurationValidationService.cs`**: Settings validation
+  - Methods: `ValidateConfigurationAsync()`, `TestApiConnectionsAsync()`
+  - API key validation and connection testing
+  - Configuration integrity verification
+
+- **`CachingService.cs`**: Multi-tier caching system
+  - Methods: `GetAsync()`, `SetAsync()`, `InvalidateAsync()`
+  - Memory, disk, and network caching layers
+  - Intelligent cache management and cleanup
+
+- **`SearchFilterService.cs`**: Advanced search and filtering
+  - Methods: `FilterPackagesAsync()`, `SearchPackagesAsync()`
+  - Real-time search with multiple filter criteria
+  - Efficient large dataset handling
+
+- **`VirtualizationService.cs`**: Large dataset handling
+  - Methods: `VirtualizeListAsync()`, `GetVisibleItemsAsync()`
+  - Memory-efficient handling of large package lists
+  - Smooth scrolling and performance optimization
+
 #### **UI Layer**
 - **`MainForm.cs`**: Primary application interface
   - Service dependency injection for clean architecture
   - Claude-inspired modern design with responsive layout
   - Event handlers utilizing service classes for business logic
-  
-- **`SpinningProgressForm.cs`**: Custom progress dialog
-  - Animated WingetWizard logo with smooth rotation
-  - Customizable status messages and dark theme styling
-  - Centers on parent window for optimal user experience
 
 #### **Utilities Layer**
 - **`FileUtils.cs`**: Common file operation utilities
@@ -367,14 +553,14 @@ UpgradeApp/
 
 ### Single-File Executable
 The application builds to a single executable file containing all dependencies:
-- **Size**: ~100MB (includes .NET runtime)
+- **Size**: ~138MB (includes .NET 6.0 runtime)
 - **Dependencies**: None (self-contained)
 - **Installation**: Copy executable + config.json
 - **Portability**: Runs on any Windows 10/11 system
 
 ### Configuration Requirements
 1. **config.json**: Must be in same directory as executable
-2. **API Keys**: Anthropic and/or Perplexity API keys required for AI features
+2. **API Keys**: Anthropic, Perplexity, and/or AWS Bedrock API keys required for AI features
 3. **Permissions**: Standard user permissions sufficient
 4. **Network**: Internet access required for AI research and package updates
 
@@ -391,7 +577,7 @@ The application builds to a single executable file containing all dependencies:
 - **Advanced Search**: Full-text search across saved AI reports
 
 ### Technical Improvements
-- **Caching System**: Local storage for AI recommendations
+- **Enhanced Caching**: Redis integration for distributed caching
 - **Performance Optimization**: Parallel processing for bulk operations
 - **Enhanced Logging**: Structured logging with log levels
 - **Plugin Architecture**: Extensible AI provider system
@@ -426,3 +612,6 @@ The application builds to a single executable file containing all dependencies:
 - **Enhanced Maintainability**: Each component has a single, focused responsibility
 - **Improved Testability**: Services can be unit tested independently
 - **Better Scalability**: Easy to add new features and AI providers
+- **AWS Bedrock Integration**: Enterprise AI platform with multiple model options
+- **Enhanced Security**: Comprehensive input validation and threat protection
+- **Performance Optimization**: Multi-tier caching and virtualization for large datasets
