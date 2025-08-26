@@ -1,0 +1,179 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WingetWizard.Avalonia.Views.DashboardPage"
+             x:DataType="vm:DashboardViewModel"
+             xmlns:vm="using:WingetWizard.Avalonia.ViewModels">
+
+    <ScrollViewer>
+        <StackPanel Spacing="{StaticResource Spacing.Large}" 
+                   Margin="{StaticResource Space.Large}">
+            
+            <!-- Welcome Section -->
+            <Border Classes="card-theme">
+                <StackPanel Spacing="{StaticResource Spacing.Medium}">
+                    <TextBlock Classes="heading-1" Text="{Binding WelcomeMessage}"/>
+                    <TextBlock Classes="body-1" Foreground="{StaticResource Text.Secondary}"
+                              Text="Manage your packages efficiently with AI assistance"/>
+                    
+                    <!-- Quick Stats -->
+                    <UniformGrid Rows="1" Columns="3" Margin="0,16,0,0">
+                        <Border Classes="card-theme" 
+                               Background="{StaticResource Primary.50}" 
+                               BorderBrush="{StaticResource Primary.200}"
+                               HorizontalAlignment="Stretch" Margin="4">
+                            <StackPanel HorizontalAlignment="Center" Spacing="4">
+                                <TextBlock Classes="heading-2" Text="{Binding InstalledCount}" 
+                                          Foreground="{StaticResource Primary.700}"/>
+                                <TextBlock Classes="label" Text="Installed" 
+                                          Foreground="{StaticResource Primary.600}"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <Border Classes="card-theme"
+                               Background="{StaticResource Success.50}" 
+                               BorderBrush="{StaticResource Success.200}"
+                               HorizontalAlignment="Stretch" Margin="4">
+                            <StackPanel HorizontalAlignment="Center" Spacing="4">
+                                <TextBlock Classes="heading-2" Text="{Binding UpdatesCount}" 
+                                          Foreground="{StaticResource Success.700}"/>
+                                <TextBlock Classes="label" Text="Updates Available" 
+                                          Foreground="{StaticResource Success.600}"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <Border Classes="card-theme"
+                               Background="{StaticResource AI.Purple.50}" 
+                               BorderBrush="{StaticResource AI.Purple.200}"
+                               HorizontalAlignment="Stretch" Margin="4">
+                            <StackPanel HorizontalAlignment="Center" Spacing="4">
+                                <TextBlock Classes="heading-2" Text="{Binding AiReportsCount}" 
+                                          Foreground="{StaticResource AI.Purple.700}"/>
+                                <TextBlock Classes="label" Text="AI Reports" 
+                                          Foreground="{StaticResource AI.Purple.600}"/>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+            
+            <!-- Quick Actions -->
+            <Border Classes="card-theme">
+                <StackPanel Spacing="{StaticResource Spacing.Medium}">
+                    <TextBlock Classes="heading-2" Text="Quick Actions"/>
+                    
+                    <UniformGrid Rows="2" Columns="2" 
+                                UniformGrid.FirstColumn="0">
+                        <Button Classes="primary-button"
+                               Command="{Binding CheckUpdatesCommand}"
+                               Margin="4" MinHeight="80">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <TextBlock Text="🔄" FontSize="24"/>
+                                <TextBlock Classes="label" Text="Check Updates"/>
+                                <TextBlock Classes="body-2" 
+                                          Text="Scan for available updates"
+                                          HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        
+                        <Button Classes="secondary-button"
+                               Command="{Binding AIResearchCommand}"
+                               Margin="4" MinHeight="80">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <TextBlock Text="🤖" FontSize="24"/>
+                                <TextBlock Classes="label" Text="AI Research"/>
+                                <TextBlock Classes="body-2" 
+                                          Text="Discover new packages"
+                                          HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        
+                        <Button Classes="secondary-button"
+                               Command="{Binding ViewPackagesCommand}"
+                               Margin="4" MinHeight="80">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <TextBlock Text="📦" FontSize="24"/>
+                                <TextBlock Classes="label" Text="Manage Packages"/>
+                                <TextBlock Classes="body-2" 
+                                          Text="View installed software"
+                                          HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        
+                        <Button Classes="secondary-button"
+                               Command="{Binding ExportReportCommand}"
+                               Margin="4" MinHeight="80">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <TextBlock Text="📄" FontSize="24"/>
+                                <TextBlock Classes="label" Text="Export Report"/>
+                                <TextBlock Classes="body-2" 
+                                          Text="Generate package report"
+                                          HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+            
+            <!-- Recent Activity -->
+            <Border Classes="card-theme">
+                <StackPanel Spacing="{StaticResource Spacing.Medium}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Classes="heading-2" 
+                                  Text="Recent Activity"/>
+                        <Button DockPanel.Dock="Right" Classes="secondary-button"
+                               Content="View All" Command="{Binding ViewAllActivityCommand}"
+                               Padding="12,6" FontSize="{StaticResource FontSize.Small}"/>
+                    </DockPanel>
+                    
+                    <!-- Activity List Placeholder -->
+                    <StackPanel Spacing="{StaticResource Spacing.Small}">
+                        <Border Classes="card-theme" 
+                               Background="{StaticResource Surface.Secondary}" 
+                               Padding="{StaticResource Space.Small}">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <TextBlock Grid.Column="0" Text="🔄" FontSize="16" 
+                                          VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Classes="body-1" Text="Updated 3 packages"/>
+                                    <TextBlock Classes="caption" Text="Visual Studio Code, Git, Node.js"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Classes="caption" 
+                                          Text="2 hours ago" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        
+                        <Border Classes="card-theme" 
+                               Background="{StaticResource Surface.Secondary}" 
+                               Padding="{StaticResource Space.Small}">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <TextBlock Grid.Column="0" Text="🤖" FontSize="16" 
+                                          VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Classes="body-1" Text="Generated AI report"/>
+                                    <TextBlock Classes="caption" Text="Analyzed Docker Desktop compatibility"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Classes="caption" 
+                                          Text="Yesterday" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        
+                        <Border Classes="card-theme" 
+                               Background="{StaticResource Surface.Secondary}" 
+                               Padding="{StaticResource Space.Small}">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <TextBlock Grid.Column="0" Text="📦" FontSize="16" 
+                                          VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Classes="body-1" Text="Installed new package"/>
+                                    <TextBlock Classes="caption" Text="Microsoft PowerToys"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Classes="caption" 
+                                          Text="2 days ago" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WingetWizard.WinUI.Test (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "WingetWizard.WinUI.Test (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

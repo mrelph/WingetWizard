@@ -1,0 +1,368 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:WingetWizard.Avalonia.ViewModels"
+             xmlns:conv="using:WingetWizard.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="WingetWizard.Avalonia.Views.UpdatesPage"
+             Background="Transparent">
+    
+    <UserControl.Resources>
+        <conv:UpdateAvailableToStatusConverter x:Key="UpdateAvailableToStatusConverter"/>
+        <conv:UpdateAvailableToBrushConverter x:Key="UpdateAvailableToBrushConverter"/>
+        <conv:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>
+        <conv:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter"/>
+    </UserControl.Resources>
+    
+    <Grid Margin="0,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header Section -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="🔄 Update Management" 
+                      FontSize="28" 
+                      FontWeight="Bold" 
+                      Foreground="White"/>
+            <TextBlock Text="Keep your software up to date with smart update management" 
+                      FontSize="16" 
+                      Foreground="#94A3B8" 
+                      Margin="0,8,0,0"/>
+        </StackPanel>
+        
+        <!-- Controls Section -->
+        <Grid Grid.Row="1" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Check Updates Button -->
+            <Button Grid.Column="0" 
+                   Name="CheckUpdatesBtn"
+                   Command="{Binding CheckForUpdatesCommand}"
+                   
+                   Background="#4F46E5"
+                   Foreground="White"
+                   BorderThickness="0"
+                   CornerRadius="8"
+                   Padding="16,12"
+                   Margin="0,0,16,0"
+                   Cursor="Hand">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="🔄" FontSize="14" Margin="0,0,8,0"/>
+                    <TextBlock Text="Check Updates" FontSize="14" FontWeight="Medium"/>
+                </StackPanel>
+            </Button>
+            
+            <!-- Upgrade All Button -->
+            <Button Grid.Column="1" 
+                   Name="UpgradeAllBtn"
+                   Command="{Binding UpgradeAllCommand}"
+                   
+                   Background="#10B981"
+                   Foreground="White"
+                   BorderThickness="0"
+                   CornerRadius="8"
+                   Padding="16,12"
+                   Margin="0,0,16,0"
+                   Cursor="Hand"
+                   IsEnabled="False">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="🚀" FontSize="14" Margin="0,0,8,0"/>
+                    <TextBlock Text="Upgrade All" FontSize="14" FontWeight="Medium"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+        
+        <!-- Batch Operations Toolbar -->
+        <Border Grid.Row="2" 
+               Background="#4F46E5" 
+               CornerRadius="8" 
+               Padding="16,12" 
+               Margin="0,0,0,16"
+               IsVisible="{Binding SelectedUpdateCount, Converter={StaticResource GreaterThanZeroConverter}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Selection Info -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="White" 
+                           Width="24" Height="24" 
+                           CornerRadius="12" 
+                           Margin="0,0,12,0">
+                        <TextBlock Text="{Binding SelectedUpdateCount}" 
+                                  FontSize="12" 
+                                  FontWeight="Bold" 
+                                  Foreground="#4F46E5" 
+                                  HorizontalAlignment="Center" 
+                                  VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="items selected" 
+                              Foreground="White" 
+                              FontSize="14" 
+                              FontWeight="Medium"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+                
+                <!-- Batch Action Buttons -->
+                <StackPanel Grid.Column="2" 
+                           Orientation="Horizontal" 
+                           Spacing="12">
+                    <Button Background="#10B981"
+                           Foreground="White"
+                           BorderThickness="0"
+                           CornerRadius="6"
+                           Padding="16,8"
+                           FontSize="13"
+                           FontWeight="Medium"
+                           Command="{Binding UpdateSelectedCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="⬆️" FontSize="12"/>
+                            <TextBlock Text="Update Selected"/>
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Background="#64748B"
+                           Foreground="White"
+                           BorderThickness="0"
+                           CornerRadius="6"
+                           Padding="12,8"
+                           FontSize="13"
+                           FontWeight="Medium"
+                           Command="{Binding ClearSelectionCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="✗" FontSize="12"/>
+                            <TextBlock Text="Clear"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- Updates List -->
+        <Border Grid.Row="3" 
+               Background="#334155" 
+               CornerRadius="8" 
+               Padding="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <!-- List Header -->
+                <Border Grid.Row="0" 
+                       Background="#475569" 
+                       CornerRadius="8,8,0,0" 
+                       Padding="16,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Grid.Column="0" 
+                                  Text="Package Name" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White"/>
+                        <TextBlock Grid.Column="1" 
+                                  Text="ID" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White"/>
+                        <TextBlock Grid.Column="2" 
+                                  Text="Current Version" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White"/>
+                        <TextBlock Grid.Column="3" 
+                                  Text="Available Version" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White"/>
+                        <TextBlock Grid.Column="4" 
+                                  Text="Actions" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White"/>
+                    </Grid>
+                </Border>
+                
+                <!-- Updates ListView -->
+                <ScrollViewer Grid.Row="1" 
+                             VerticalScrollBarVisibility="Auto">
+                    <ListBox Name="UpdatesListView"
+                              ItemsSource="{Binding UpgradableApps}"
+                              Background="Transparent"
+                              BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#475569" 
+                                       CornerRadius="6" 
+                                       Margin="8,4" 
+                                       Padding="16,12">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="200"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Package Name -->
+                                        <StackPanel Grid.Column="0" 
+                                                  Orientation="Vertical">
+                                            <TextBlock Text="{Binding Name}" 
+                                                      FontWeight="Medium" 
+                                                      Foreground="White" 
+                                                      FontSize="14"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Package ID -->
+                                        <TextBlock Grid.Column="1" 
+                                                  Text="{Binding Id}" 
+                                                  Foreground="#CBD5E1" 
+                                                  FontSize="12" 
+                                                  VerticalAlignment="Center"/>
+                                        
+                                        <!-- Current Version -->
+                                        <TextBlock Grid.Column="2" 
+                                                  Text="{Binding Version}" 
+                                                  Foreground="#94A3B8" 
+                                                  FontSize="12" 
+                                                  VerticalAlignment="Center"/>
+                                        
+                                        <!-- Available Version -->
+                                        <TextBlock Grid.Column="3" 
+                                                  Text="{Binding Available}" 
+                                                  Foreground="#F59E0B" 
+                                                  FontSize="12" 
+                                                  VerticalAlignment="Center"/>
+                                        
+                                        <!-- Actions -->
+                                        <StackPanel Grid.Column="4" 
+                                                  Orientation="Horizontal" 
+                                                  HorizontalAlignment="Right">
+                                            <Button Name="UpgradeBtn"
+                                                    Background="#F59E0B"
+                                                    Foreground="White"
+                                                    BorderThickness="0"
+                                                    CornerRadius="6"
+                                                    Padding="8,6"
+                                                    Cursor="Hand">
+                                                <TextBlock Text="Upgrade" FontSize="11"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+        
+        <!-- Status Footer -->
+        <Border Grid.Row="4" 
+               Background="#475569" 
+               CornerRadius="6" 
+               Padding="16,12" 
+               Margin="0,16,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" 
+                          Text="{Binding StatusMessage}" 
+                          Foreground="#E2E8F0" 
+                          VerticalAlignment="Center"/>
+                          
+                <StackPanel Grid.Column="1" 
+                          Orientation="Horizontal">
+                    <TextBlock Text="Updates Available:" 
+                              FontSize="12" 
+                              Foreground="#94A3B8" 
+                              VerticalAlignment="Center" 
+                              Margin="0,0,8,0"/>
+                    <TextBlock Text="{Binding UpgradableApps.Count}" 
+                              FontSize="12" 
+                              Foreground="#F59E0B" 
+                              FontWeight="Medium" 
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- Loading Overlay -->
+        <Border Name="LoadingOverlay" 
+               Grid.RowSpan="4"
+               Background="#80000000"
+               IsVisible="{Binding IsLoading}"
+               ZIndex="1000">
+            <Grid>
+                <Border Background="#1E293B"
+                       CornerRadius="12"
+                       Padding="40"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       MaxWidth="300">
+                    <StackPanel HorizontalAlignment="Center">
+                        <!-- Loading Spinner -->
+                        <Border Name="LoadingSpinner"
+                               Width="48"
+                               Height="48"
+                               CornerRadius="24"
+                               BorderThickness="4"
+                               BorderBrush="#4F46E5"
+                               Margin="0,0,0,16">
+                            <Border.Styles>
+                                <Style Selector="Border#LoadingSpinner">
+                                    <Style.Animations>
+                                        <Animation Duration="0:0:1" IterationCount="INFINITE">
+                                            <KeyFrame Cue="0%">
+                                                <Setter Property="RenderTransform" Value="rotate(0deg)"/>
+                                            </KeyFrame>
+                                            <KeyFrame Cue="100%">
+                                                <Setter Property="RenderTransform" Value="rotate(360deg)"/>
+                                            </KeyFrame>
+                                        </Animation>
+                                    </Style.Animations>
+                                </Style>
+                            </Border.Styles>
+                        </Border>
+                        
+                        <TextBlock Name="LoadingText"
+                                  Text="Checking for updates..."
+                                  FontSize="16"
+                                  FontWeight="SemiBold"
+                                  Foreground="White"
+                                  HorizontalAlignment="Center"
+                                  Margin="0,0,0,8"/>
+                                  
+                        <TextBlock Name="LoadingSubtext"
+                                  Text="Please wait while we check for available updates"
+                                  FontSize="12"
+                                  Foreground="#94A3B8"
+                                  HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
+
+

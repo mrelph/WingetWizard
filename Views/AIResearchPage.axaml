@@ -1,0 +1,285 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:WingetWizard.Avalonia.ViewModels"
+             xmlns:conv="using:WingetWizard.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="WingetWizard.Avalonia.Views.AIResearchPage"
+             Background="Transparent">
+    
+    <UserControl.Resources>
+        <conv:UpdateAvailableToStatusConverter x:Key="UpdateAvailableToStatusConverter"/>
+        <conv:UpdateAvailableToBrushConverter x:Key="UpdateAvailableToBrushConverter"/>
+        <conv:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>
+        <conv:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter"/>
+    </UserControl.Resources>
+    
+    <Grid Margin="0,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header Section -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="🤖 AI Research" 
+                      FontSize="28" 
+                      FontWeight="Bold" 
+                      Foreground="White"/>
+            <TextBlock Text="Get intelligent package recommendations powered by AI" 
+                      FontSize="16" 
+                      Foreground="#94A3B8" 
+                      Margin="0,8,0,0"/>
+        </StackPanel>
+        
+        <!-- Search Section -->
+        <Grid Grid.Row="1" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Search Box -->
+            <Border Grid.Column="0" 
+                   Background="#334155" 
+                   CornerRadius="8" 
+                   Padding="16,12" 
+                   Margin="0,0,16,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0" 
+                              Text="🔍" 
+                              FontSize="16" 
+                              Foreground="#94A3B8" 
+                              VerticalAlignment="Center" 
+                              Margin="0,0,12,0"/>
+                    
+                    <TextBox Grid.Column="1" 
+                            Name="SearchBox"
+                            Text="{Binding SearchQuery}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="White"
+                            FontSize="14"
+                            Watermark="Enter a search query to get AI-powered package recommendations..."
+                            VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+            
+            <!-- Research Button -->
+            <Button Grid.Column="1" 
+                   Name="ResearchBtn"
+                   Command="{Binding SearchCommand}"
+                   
+                   Background="#8B5CF6"
+                   Foreground="White"
+                   BorderThickness="0"
+                   CornerRadius="8"
+                   Padding="16,12"
+                   Cursor="Hand">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="🤖" FontSize="14" Margin="0,0,8,0"/>
+                    <TextBlock Text="Research" FontSize="14" FontWeight="Medium"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+        
+        <!-- AI Recommendations -->
+        <Border Grid.Row="2" 
+               Background="#334155" 
+               CornerRadius="8" 
+               Padding="24">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Name="RecommendationsPanel">
+                    
+                    <!-- Initial Message -->
+                    <Border Background="#475569" 
+                           CornerRadius="8" 
+                           Padding="20" 
+                           Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="💡 How AI Research Works" 
+                                      FontSize="18" 
+                                      FontWeight="SemiBold" 
+                                      Foreground="White" 
+                                      Margin="0,0,0,12"/>
+                            <TextBlock Text="Enter a search query above to get intelligent package recommendations. The AI will analyze your request and suggest relevant software packages based on your needs." 
+                                      FontSize="14" 
+                                      Foreground="#E2E8F0" 
+                                      TextWrapping="Wrap" 
+                                      LineHeight="20"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- AI Recommendations will be dynamically added here -->
+                    <ItemsControl Name="RecommendationsList" 
+                                 ItemsSource="{Binding Recommendations}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#475569" 
+                                       CornerRadius="8" 
+                                       Padding="20" 
+                                       Margin="0,0,0,16">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        
+                                        <!-- Package Name and Install Button -->
+                                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <TextBlock Grid.Column="0" 
+                                                      Text="{Binding Name}" 
+                                                      FontSize="16" 
+                                                      FontWeight="SemiBold" 
+                                                      Foreground="White"/>
+                                            
+                                            <Button Grid.Column="1" 
+                                                   Name="InstallBtn"
+                                                   Background="#10B981"
+                                                   Foreground="White"
+                                                   BorderThickness="0"
+                                                   CornerRadius="6"
+                                                   Padding="12,8"
+                                                   Cursor="Hand">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="📦" FontSize="12" Margin="0,0,6,0"/>
+                                                    <TextBlock Text="Install" FontSize="12" FontWeight="Medium"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                        
+                                        <!-- Package Description -->
+                                        <TextBlock Grid.Row="1" 
+                                                  Text="{Binding Description}" 
+                                                  FontSize="14" 
+                                                  Foreground="#CBD5E1" 
+                                                  TextWrapping="Wrap" 
+                                                  LineHeight="20" 
+                                                  Margin="0,0,0,12"/>
+                                        
+                                        <!-- AI Reasoning -->
+                                        <Border Grid.Row="2" 
+                                               Background="#374151" 
+                                               CornerRadius="6" 
+                                               Padding="12">
+                                            <TextBlock Text="{Binding AIReasoning}" 
+                                                      FontSize="12" 
+                                                      Foreground="#94A3B8" 
+                                                      TextWrapping="Wrap" 
+                                                      LineHeight="18"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        
+        <!-- Status Footer -->
+        <Border Grid.Row="3" 
+               Background="#475569" 
+               CornerRadius="6" 
+               Padding="16,12" 
+               Margin="0,16,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" 
+                          Text="{Binding StatusMessage}" 
+                          Foreground="#E2E8F0" 
+                          VerticalAlignment="Center"/>
+                          
+                <StackPanel Grid.Column="1" 
+                          Orientation="Horizontal">
+                    <TextBlock Text="Recommendations:" 
+                              FontSize="12" 
+                              Foreground="#94A3B8" 
+                              VerticalAlignment="Center" 
+                              Margin="0,0,8,0"/>
+                    <TextBlock Text="{Binding Recommendations.Count}" 
+                              FontSize="12" 
+                              Foreground="#8B5CF6" 
+                              FontWeight="Medium" 
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- Loading Overlay -->
+        <Border Name="LoadingOverlay" 
+               Grid.RowSpan="4"
+               Background="#80000000"
+               IsVisible="{Binding IsSearching}"
+               ZIndex="1000">
+            <Grid>
+                <Border Background="#1E293B"
+                       CornerRadius="12"
+                       Padding="40"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       MaxWidth="300">
+                    <StackPanel HorizontalAlignment="Center">
+                        <!-- Loading Spinner -->
+                        <Border Name="LoadingSpinner"
+                               Width="48"
+                               Height="48"
+                               CornerRadius="24"
+                               BorderThickness="4"
+                               BorderBrush="#8B5CF6"
+                               Margin="0,0,0,16">
+                            <Border.Styles>
+                                <Style Selector="Border#LoadingSpinner">
+                                    <Style.Animations>
+                                        <Animation Duration="0:0:1" IterationCount="INFINITE">
+                                            <KeyFrame Cue="0%">
+                                                <Setter Property="RenderTransform" Value="rotate(0deg)"/>
+                                            </KeyFrame>
+                                            <KeyFrame Cue="100%">
+                                                <Setter Property="RenderTransform" Value="rotate(360deg)"/>
+                                            </KeyFrame>
+                                        </Animation>
+                                    </Style.Animations>
+                                </Style>
+                            </Border.Styles>
+                        </Border>
+                        
+                        <TextBlock Name="LoadingText"
+                                  Text="AI is researching packages..."
+                                  FontSize="16"
+                                  FontWeight="SemiBold"
+                                  Foreground="White"
+                                  HorizontalAlignment="Center"
+                                  Margin="0,0,0,8"/>
+                                  
+                        <TextBlock Name="LoadingSubtext"
+                                  Text="Please wait while we analyze your request"
+                                  FontSize="12"
+                                  Foreground="#94A3B8"
+                                  HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
+
+

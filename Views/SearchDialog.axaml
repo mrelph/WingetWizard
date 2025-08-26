@@ -1,0 +1,316 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
+        x:Class="WingetWizard.Avalonia.Views.SearchDialog"
+        Title="🔍 Search &amp; Install Packages"
+        Width="900" Height="650"
+        MinWidth="700" MinHeight="400"
+        WindowStartupLocation="CenterOwner"
+        Background="#0F172A"
+        CanResize="True"
+        ShowInTaskbar="False">
+    
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="60"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Search Controls -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Search Box -->
+            <Border Grid.Column="0" 
+                   Background="#334155" 
+                   CornerRadius="8" 
+                   Padding="16,12" 
+                   Margin="0,0,16,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0" 
+                              Text="🔍" 
+                              FontSize="16" 
+                              Foreground="#94A3B8" 
+                              VerticalAlignment="Center" 
+                              Margin="0,0,12,0"/>
+                    
+                    <TextBox Grid.Column="1" 
+                            Name="SearchBox"
+                            Text="{Binding SearchQuery}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="White"
+                            FontSize="14"
+                            Watermark="Search for packages... (e.g., vscode, chrome, git, python)"
+                            VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+            
+            <!-- Search Button -->
+            <Button Grid.Column="1" 
+                   Name="SearchButton"
+                   Command="{Binding SearchAsyncCommand}"
+                   
+                   Background="#4F46E5"
+                   Foreground="White"
+                   BorderThickness="0"
+                   CornerRadius="8"
+                   Padding="16,12"
+                   Margin="0,0,16,0"
+                   Cursor="Hand">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="🔍" FontSize="14" Margin="0,0,8,0"/>
+                    <TextBlock Text="Search" FontSize="14" FontWeight="Medium"/>
+                </StackPanel>
+            </Button>
+            
+            <!-- Results Count Label -->
+            <TextBlock Grid.Column="2" 
+                      Name="ResultsCountLabel"
+                      Text="{Binding ResultsCountMessage}"
+                      FontSize="12"
+                      Foreground="#94A3B8"
+                      VerticalAlignment="Center"/>
+        </Grid>
+        
+        <!-- Search Results -->
+        <Border Grid.Row="1" 
+               Background="#334155" 
+               CornerRadius="8" 
+               Padding="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <!-- List Header -->
+                <Border Grid.Row="0" 
+                       Background="#475569" 
+                       CornerRadius="8,8,0,0" 
+                       Padding="16,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="90"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Grid.Column="0" 
+                                  Text="Select" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White"/>
+                        <TextBlock Grid.Column="1" 
+                                  Text="Package Name" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White"/>
+                        <TextBlock Grid.Column="2" 
+                                  Text="ID" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White"/>
+                        <TextBlock Grid.Column="3" 
+                                  Text="Version" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White"/>
+                        <TextBlock Grid.Column="4" 
+                                  Text="Source" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White"/>
+                    </Grid>
+                </Border>
+                
+                <!-- Results ListView -->
+                <ScrollViewer Grid.Row="1" 
+                             VerticalScrollBarVisibility="Auto">
+                    <ListBox Name="ResultsListView"
+                              ItemsSource="{Binding SearchResults}"
+                              Background="Transparent"
+                              BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#475569" 
+                                       CornerRadius="6" 
+                                       Margin="8,4" 
+                                       Padding="16,12">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="220"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="90"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Checkbox for selection -->
+                                        <CheckBox Grid.Column="0" 
+                                                 IsChecked="{Binding IsSelected}"
+                                                 Margin="0,0,12,0"
+                                                 VerticalAlignment="Center"/>
+                                        
+                                        <!-- Package Name -->
+                                        <StackPanel Grid.Column="1" 
+                                                  Orientation="Vertical">
+                                            <TextBlock Text="{Binding Name}" 
+                                                      FontWeight="Medium" 
+                                                      Foreground="White" 
+                                                      FontSize="14"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Package ID -->
+                                        <TextBlock Grid.Column="2" 
+                                                  Text="{Binding Id}" 
+                                                  Foreground="#CBD5E1" 
+                                                  FontSize="12" 
+                                                  VerticalAlignment="Center"/>
+                                        
+                                        <!-- Version -->
+                                        <TextBlock Grid.Column="3" 
+                                                  Text="{Binding Version}" 
+                                                  Foreground="#94A3B8" 
+                                                  FontSize="12" 
+                                                  VerticalAlignment="Center"/>
+                                        
+                                        <!-- Source -->
+                                        <TextBlock Grid.Column="4" 
+                                                  Text="{Binding Source}" 
+                                                  Foreground="#94A3B8" 
+                                                  FontSize="12" 
+                                                  VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+        
+        <!-- Action Buttons -->
+        <Grid Grid.Row="2" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Install Button -->
+            <Button Grid.Column="0" 
+                   Name="InstallButton"
+                   Command="{Binding InstallSelectedAsyncCommand}"
+                   
+                   Background="#10B981"
+                   Foreground="White"
+                   BorderThickness="0"
+                   CornerRadius="8"
+                   Padding="16,12"
+                   Margin="0,0,16,0"
+                   Cursor="Hand"
+                   IsEnabled="{Binding CanInstall}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="📦" FontSize="14" Margin="0,0,8,0"/>
+                    <TextBlock Text="Install Selected" FontSize="14" FontWeight="Medium"/>
+                </StackPanel>
+            </Button>
+            
+            <!-- Select All Button -->
+            <Button Grid.Column="1" 
+                   Name="SelectAllButton"
+                   Command="{Binding SelectAllCommand}"
+                   
+                   Background="#4F46E5"
+                   Foreground="White"
+                   BorderThickness="0"
+                   CornerRadius="8"
+                   Padding="16,12"
+                   Margin="0,0,16,0"
+                   Cursor="Hand">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="☑️" FontSize="14" Margin="0,0,8,0"/>
+                    <TextBlock Text="Select All" FontSize="14" FontWeight="Medium"/>
+                </StackPanel>
+            </Button>
+            
+            <!-- Deselect All Button -->
+            <Button Grid.Column="2" 
+                   Name="DeselectAllButton"
+                   Command="{Binding DeselectAllCommand}"
+                   
+                   Background="#64748B"
+                   Foreground="White"
+                   BorderThickness="0"
+                   CornerRadius="8"
+                   Padding="16,12"
+                   Cursor="Hand">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="☐" FontSize="14" Margin="0,0,8,0"/>
+                    <TextBlock Text="Deselect All" FontSize="14" FontWeight="Medium"/>
+                </StackPanel>
+            </Button>
+            
+            <!-- Status Label -->
+            <TextBlock Grid.Column="3" 
+                      Name="StatusLabel"
+                      Text="{Binding StatusMessage}"
+                      FontSize="12"
+                      Foreground="#94A3B8"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Right"/>
+        </Grid>
+        
+        <!-- Loading Overlay -->
+        <Border Name="LoadingOverlay" 
+               Grid.RowSpan="3"
+               Background="#80000000"
+               IsVisible="{Binding IsSearching}"
+               ZIndex="1000">
+            <Grid>
+                <Border Background="#1E293B"
+                       CornerRadius="12"
+                       Padding="40"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       MaxWidth="300">
+                    <StackPanel HorizontalAlignment="Center">
+                        <!-- Simple Loading Indicator -->
+                        <Border Name="LoadingSpinner"
+                               Width="48"
+                               Height="48"
+                               CornerRadius="24"
+                               BorderThickness="4"
+                               BorderBrush="#4F46E5"
+                               Margin="0,0,0,16"/>
+                        
+                        <TextBlock Name="LoadingText"
+                                  Text="Searching packages..."
+                                  FontSize="16"
+                                  FontWeight="SemiBold"
+                                  Foreground="White"
+                                  HorizontalAlignment="Center"
+                                  Margin="0,0,0,8"/>
+                                  
+                        <TextBlock Name="LoadingSubtext"
+                                  Text="Please wait while we search for packages"
+                                  FontSize="12"
+                                  Foreground="#94A3B8"
+                                  HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

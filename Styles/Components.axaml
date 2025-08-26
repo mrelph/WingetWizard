@@ -1,0 +1,281 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:system="using:System">
+    
+    <!-- Design Tokens -->
+    <Styles.Resources>
+        <!-- Typography Scale -->
+        <FontFamily x:Key="Font.Primary">Segoe UI</FontFamily>
+        <FontFamily x:Key="Font.Monospace">Consolas</FontFamily>
+        <FontFamily x:Key="Font.Display">Segoe UI Semibold</FontFamily>
+        
+        <!-- Font Sizes -->
+        <system:Double x:Key="FontSize.H1">32</system:Double>
+        <system:Double x:Key="FontSize.H2">24</system:Double>
+        <system:Double x:Key="FontSize.H3">18</system:Double>
+        <system:Double x:Key="FontSize.H4">16</system:Double>
+        <system:Double x:Key="FontSize.Body">14</system:Double>
+        <system:Double x:Key="FontSize.Small">12</system:Double>
+        <system:Double x:Key="FontSize.XSmall">10</system:Double>
+        
+        <!-- Font Weights -->
+        <FontWeight x:Key="FontWeight.Light">Light</FontWeight>
+        <FontWeight x:Key="FontWeight.Regular">Normal</FontWeight>
+        <FontWeight x:Key="FontWeight.Medium">Medium</FontWeight>
+        <FontWeight x:Key="FontWeight.Semibold">SemiBold</FontWeight>
+        <FontWeight x:Key="FontWeight.Bold">Bold</FontWeight>
+        
+        <!-- Spacing Scale -->
+        <Thickness x:Key="Space.XSmall">4</Thickness>
+        <Thickness x:Key="Space.Small">8</Thickness>
+        <Thickness x:Key="Space.Medium">16</Thickness>
+        <Thickness x:Key="Space.Large">24</Thickness>
+        <Thickness x:Key="Space.XLarge">32</Thickness>
+        <Thickness x:Key="Space.XXLarge">48</Thickness>
+        
+        <!-- Individual spacing values -->
+        <system:Double x:Key="Spacing.XSmall">4</system:Double>
+        <system:Double x:Key="Spacing.Small">8</system:Double>
+        <system:Double x:Key="Spacing.Medium">16</system:Double>
+        <system:Double x:Key="Spacing.Large">24</system:Double>
+        <system:Double x:Key="Spacing.XLarge">32</system:Double>
+        <system:Double x:Key="Spacing.XXLarge">48</system:Double>
+        
+        <!-- Border Radius -->
+        <CornerRadius x:Key="Radius.Small">4</CornerRadius>
+        <CornerRadius x:Key="Radius.Medium">8</CornerRadius>
+        <CornerRadius x:Key="Radius.Large">12</CornerRadius>
+        <CornerRadius x:Key="Radius.XLarge">16</CornerRadius>
+        <CornerRadius x:Key="Radius.Round">50</CornerRadius>
+        
+        <!-- Color Palette - Light Theme -->
+        <SolidColorBrush x:Key="Primary" Color="#2563EB"/>
+        <SolidColorBrush x:Key="Primary.50" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="Primary.100" Color="#DBEAFE"/>
+        <SolidColorBrush x:Key="Primary.200" Color="#BFDBFE"/>
+        <SolidColorBrush x:Key="Primary.300" Color="#93C5FD"/>
+        <SolidColorBrush x:Key="Primary.400" Color="#60A5FA"/>
+        <SolidColorBrush x:Key="Primary.500" Color="#3B82F6"/>
+        <SolidColorBrush x:Key="Primary.600" Color="#2563EB"/>
+        <SolidColorBrush x:Key="Primary.700" Color="#1D4ED8"/>
+        <SolidColorBrush x:Key="Primary.800" Color="#1E40AF"/>
+        <SolidColorBrush x:Key="Primary.900" Color="#1E3A8A"/>
+        
+        <!-- Semantic Colors -->
+        <SolidColorBrush x:Key="Success" Color="#10B981"/>
+        <SolidColorBrush x:Key="Success.50" Color="#ECFDF5"/>
+        <SolidColorBrush x:Key="Success.100" Color="#D1FAE5"/>
+        <SolidColorBrush x:Key="Success.200" Color="#A7F3D0"/>
+        <SolidColorBrush x:Key="Success.600" Color="#10B981"/>
+        <SolidColorBrush x:Key="Success.700" Color="#047857"/>
+        
+        <SolidColorBrush x:Key="Warning" Color="#F59E0B"/>
+        <SolidColorBrush x:Key="Warning.50" Color="#FFFBEB"/>
+        <SolidColorBrush x:Key="Warning.100" Color="#FEF3C7"/>
+        <SolidColorBrush x:Key="Warning.600" Color="#F59E0B"/>
+        <SolidColorBrush x:Key="Warning.700" Color="#D97706"/>
+        
+        <SolidColorBrush x:Key="Error" Color="#EF4444"/>
+        <SolidColorBrush x:Key="Error.50" Color="#FEF2F2"/>
+        <SolidColorBrush x:Key="Error.100" Color="#FEE2E2"/>
+        <SolidColorBrush x:Key="Error.600" Color="#EF4444"/>
+        <SolidColorBrush x:Key="Error.700" Color="#DC2626"/>
+        
+        <SolidColorBrush x:Key="AI.Purple" Color="#8B5CF6"/>
+        <SolidColorBrush x:Key="AI.Purple.50" Color="#F5F3FF"/>
+        <SolidColorBrush x:Key="AI.Purple.100" Color="#EDE9FE"/>
+        <SolidColorBrush x:Key="AI.Purple.200" Color="#DDD6FE"/>
+        <SolidColorBrush x:Key="AI.Purple.600" Color="#8B5CF6"/>
+        <SolidColorBrush x:Key="AI.Purple.700" Color="#7C3AED"/>
+        
+        <!-- Neutral Colors -->
+        <SolidColorBrush x:Key="Neutral.White" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Neutral.50" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="Neutral.100" Color="#F1F5F9"/>
+        <SolidColorBrush x:Key="Neutral.200" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Neutral.300" Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Neutral.400" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Neutral.500" Color="#64748B"/>
+        <SolidColorBrush x:Key="Neutral.600" Color="#475569"/>
+        <SolidColorBrush x:Key="Neutral.700" Color="#334155"/>
+        <SolidColorBrush x:Key="Neutral.800" Color="#1E293B"/>
+        <SolidColorBrush x:Key="Neutral.900" Color="#0F172A"/>
+        
+        <!-- Surface Colors -->
+        <SolidColorBrush x:Key="Surface.Primary" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Surface.Secondary" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="Surface.Tertiary" Color="#F1F5F9"/>
+        <SolidColorBrush x:Key="Surface.Card" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Surface.Overlay" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Surface.Hover" Color="#F8FAFC"/>
+        
+        <!-- Text Colors -->
+        <SolidColorBrush x:Key="Text.Primary" Color="#0F172A"/>
+        <SolidColorBrush x:Key="Text.Secondary" Color="#475569"/>
+        <SolidColorBrush x:Key="Text.Tertiary" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Text.Disabled" Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.OnPrimary" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Text.OnDark" Color="#FFFFFF"/>
+        
+        <!-- Border Colors -->
+        <SolidColorBrush x:Key="Border.Light" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium" Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Border.Strong" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Border.Focus" Color="#2563EB"/>
+    </Styles.Resources>
+    
+    <!-- Card Component Theme -->
+    <Style Selector="Border.card-theme">
+        <Setter Property="Background" Value="{StaticResource Surface.Card}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Light}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Large}"/>
+        <Setter Property="Padding" Value="{StaticResource Space.Medium}"/>
+        <Setter Property="Margin" Value="{StaticResource Space.Small}"/>
+    </Style>
+    
+    <Style Selector="Border.card-theme:pointerover">
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Medium}"/>
+    </Style>
+    
+    <!-- Primary Button Theme -->
+    <Style Selector="Button.primary-button">
+        <Setter Property="Background" Value="{StaticResource Primary.600}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text.OnPrimary}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}"/>
+        <Setter Property="Padding" Value="16,8"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeight.Medium}"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Body}"/>
+        <Setter Property="MinHeight" Value="40"/>
+    </Style>
+    
+    <Style Selector="Button.primary-button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Primary.700}"/>
+    </Style>
+    
+    <Style Selector="Button.primary-button:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Primary.800}"/>
+    </Style>
+    
+    <!-- Secondary Button Theme -->
+    <Style Selector="Button.secondary-button">
+        <Setter Property="Background" Value="{StaticResource Surface.Primary}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Medium}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}"/>
+        <Setter Property="Padding" Value="16,8"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeight.Medium}"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Body}"/>
+        <Setter Property="MinHeight" Value="40"/>
+    </Style>
+    
+    <Style Selector="Button.secondary-button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Surface.Hover}"/>
+    </Style>
+    
+    <Style Selector="Button.secondary-button:pointerover">
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Strong}"/>
+    </Style>
+    
+    <!-- Success Button Theme -->
+    <Style Selector="Button.success-button">
+        <Setter Property="Background" Value="{StaticResource Success.600}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text.OnPrimary}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}"/>
+        <Setter Property="Padding" Value="16,8"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeight.Medium}"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Body}"/>
+        <Setter Property="MinHeight" Value="40"/>
+    </Style>
+    
+    <Style Selector="Button.success-button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Success.700}"/>
+    </Style>
+    
+    <!-- Typography Styles -->
+    <Style Selector="TextBlock.heading-1">
+        <Setter Property="FontSize" Value="{StaticResource FontSize.H1}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeight.Bold}"/>
+        <Setter Property="FontFamily" Value="{StaticResource Font.Display}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+    
+    <Style Selector="TextBlock.heading-2">
+        <Setter Property="FontSize" Value="{StaticResource FontSize.H2}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeight.Semibold}"/>
+        <Setter Property="FontFamily" Value="{StaticResource Font.Display}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+    
+    <Style Selector="TextBlock.heading-3">
+        <Setter Property="FontSize" Value="{StaticResource FontSize.H3}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeight.Semibold}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+    
+    <Style Selector="TextBlock.body-1">
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Body}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeight.Regular}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        <Setter Property="LineHeight" Value="1.5"/>
+    </Style>
+    
+    <Style Selector="TextBlock.body-2">
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Small}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeight.Regular}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text.Secondary}"/>
+        <Setter Property="LineHeight" Value="1.4"/>
+    </Style>
+    
+    <Style Selector="TextBlock.caption">
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Small}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeight.Regular}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text.Tertiary}"/>
+    </Style>
+    
+    <Style Selector="TextBlock.label">
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Small}"/>
+        <Setter Property="FontWeight" Value="{StaticResource FontWeight.Medium}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+    </Style>
+    
+    <!-- Badge Styles -->
+    <Style Selector="Border.badge-theme">
+        <Setter Property="Background" Value="{StaticResource Primary.100}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    
+    <Style Selector="Border.success-badge">
+        <Setter Property="Background" Value="{StaticResource Success.100}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    
+    <Style Selector="Border.warning-badge">
+        <Setter Property="Background" Value="{StaticResource Warning.100}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    
+    <Style Selector="Border.error-badge">
+        <Setter Property="Background" Value="{StaticResource Error.100}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    
+</Styles>

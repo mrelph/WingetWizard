@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WingetWizard.Avalonia.Views.LoadingIndicator">
+    
+    <Border Background="{StaticResource Surface.Primary.Brush}"
+           CornerRadius="{StaticResource Radius.Medium}"
+           Padding="{StaticResource Space.Large}"
+           HorizontalAlignment="Center"
+           VerticalAlignment="Center">
+        <StackPanel Spacing="{StaticResource Spacing.Medium}" HorizontalAlignment="Center">
+            <!-- Spinning Icon -->
+            <TextBlock Text="⟳" 
+                      FontSize="32"
+                      HorizontalAlignment="Center"
+                      Foreground="{StaticResource Primary.500.Brush}">
+                <TextBlock.RenderTransform>
+                    <RotateTransform/>
+                </TextBlock.RenderTransform>
+                <TextBlock.Styles>
+                    <Style Selector="TextBlock">
+                        <Style.Animations>
+                            <Animation Duration="0:0:1" IterationCount="INFINITE">
+                                <KeyFrame Cue="0%">
+                                    <Setter Property="RenderTransform">
+                                        <RotateTransform Angle="0"/>
+                                    </Setter>
+                                </KeyFrame>
+                                <KeyFrame Cue="100%">
+                                    <Setter Property="RenderTransform">
+                                        <RotateTransform Angle="360"/>
+                                    </Setter>
+                                </KeyFrame>
+                            </Animation>
+                        </Style.Animations>
+                    </Style>
+                </TextBlock.Styles>
+            </TextBlock>
+            
+            <!-- Loading Text -->
+            <TextBlock Text="Loading..." 
+                      FontSize="{StaticResource FontSize.Body}"
+                      Foreground="{StaticResource Text.Secondary.Brush}"
+                      HorizontalAlignment="Center"/>
+        </StackPanel>
+    </Border>
+    
+</UserControl>

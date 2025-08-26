@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace UpgradeApp.Utils
+namespace WingetWizard.WinUI.Utils
 {
     /// <summary>
     /// Utility class for file operations and common file-related tasks
@@ -220,3 +220,6 @@ namespace UpgradeApp.Utils
         }
     }
 }
+
+
+

@@ -4,13 +4,13 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Avalonia.Services
 {
     /// <summary>
     /// Service class responsible for application settings management
     /// Handles loading, saving, and managing user preferences and API keys
     /// </summary>
-    public class SettingsService
+    public class SettingsService : ISettingsService
     {
         private readonly string _settingsPath;
         private Dictionary<string, object> _settings;
@@ -228,3 +228,6 @@ namespace UpgradeApp.Services
         }
     }
 }
+
+
+

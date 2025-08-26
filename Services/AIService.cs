@@ -5,31 +5,35 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using UpgradeApp.Models;
+using WingetWizard.Avalonia.Models;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Avalonia.Services
 {
     /// <summary>
     /// Service class responsible for AI-powered package recommendations
     /// Handles Claude AI and Perplexity API integration with structured prompting
     /// </summary>
-    public class AIService
+    public class AIService : IAIService
     {
         private readonly HttpClient _httpClient;
         private readonly SemaphoreSlim _httpSemaphore;
+        private readonly ISettingsService _settingsService;
         private readonly string _claudeApiKey;
         private readonly string _perplexityApiKey;
         private readonly string _selectedAiModel;
         private readonly bool _usePerplexity;
 
-        public AIService(string claudeApiKey, string perplexityApiKey, string selectedAiModel, bool usePerplexity)
+        public AIService(ISettingsService settingsService)
         {
             _httpClient = new HttpClient();
             _httpSemaphore = new SemaphoreSlim(1, 1);
-            _claudeApiKey = claudeApiKey;
-            _perplexityApiKey = perplexityApiKey;
-            _selectedAiModel = selectedAiModel;
-            _usePerplexity = usePerplexity;
+            _settingsService = settingsService;
+            
+            // Load configuration from settings service
+            _claudeApiKey = _settingsService.GetSetting<string>("ClaudeApiKey") ?? "";
+            _perplexityApiKey = _settingsService.GetSetting<string>("PerplexityApiKey") ?? "";
+            _selectedAiModel = _settingsService.GetSetting<string>("SelectedAiModel") ?? "claude-sonnet-4-20250514";
+            _usePerplexity = _settingsService.GetSetting<bool>("UsePerplexity");
         }
 
         /// <summary>
@@ -318,3 +322,6 @@ Brief 1-2 sentence recommendation with urgency level.
         }
     }
 }
+
+
+

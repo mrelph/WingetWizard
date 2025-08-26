@@ -1,0 +1,294 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="WingetWizard.Avalonia.Views.SettingsPage"
+             Background="Transparent">
+    
+    <Grid Margin="0,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header Section -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="⚙️ Application Settings" 
+                      FontSize="28" 
+                      FontWeight="Bold" 
+                      Foreground="White"/>
+            <TextBlock Text="Configure your application preferences and behavior" 
+                      FontSize="16" 
+                      Foreground="#94A3B8" 
+                      Margin="0,8,0,0"/>
+        </StackPanel>
+        
+        <!-- Settings Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                
+                <!-- General Settings -->
+                <Border Background="#334155" 
+                       CornerRadius="8" 
+                       Padding="24" 
+                       Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="🔧 General Settings" 
+                                  FontSize="18" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White" 
+                                  Margin="0,0,0,16"/>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Auto-check for updates" 
+                                          FontSize="14" 
+                                          FontWeight="Medium" 
+                                          Foreground="White" 
+                                          Margin="0,0,0,4"/>
+                                <TextBlock Text="Automatically check for package updates on startup" 
+                                          FontSize="12" 
+                                          Foreground="#94A3B8"/>
+                            </StackPanel>
+                            
+                            <CheckBox Grid.Column="1" 
+                                     Name="AutoCheckUpdatesCheckBox"
+                                     IsChecked="{Binding AutoCheckUpdates}"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Verbose logging" 
+                                          FontSize="14" 
+                                          FontWeight="Medium" 
+                                          Foreground="White" 
+                                          Margin="0,0,0,4"/>
+                                <TextBlock Text="Enable detailed logging for debugging purposes" 
+                                          FontSize="12" 
+                                          Foreground="#94A3B8"/>
+                            </StackPanel>
+                            
+                            <CheckBox Grid.Column="1" 
+                                     Name="VerboseLoggingCheckBox"
+                                     IsChecked="{Binding VerboseLogging}"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Dark theme" 
+                                          FontSize="14" 
+                                          FontWeight="Medium" 
+                                          Foreground="White" 
+                                          Margin="0,0,0,4"/>
+                                <TextBlock Text="Use dark theme for the application interface" 
+                                          FontSize="12" 
+                                          Foreground="#94A3B8"/>
+                            </StackPanel>
+                            
+                            <CheckBox Grid.Column="1" 
+                                     Name="DarkThemeCheckBox"
+                                     IsChecked="{Binding DarkTheme}"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Package Management Settings -->
+                <Border Background="#334155" 
+                       CornerRadius="8" 
+                       Padding="24" 
+                       Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="📦 Package Management" 
+                                  FontSize="18" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White" 
+                                  Margin="0,0,0,16"/>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Default package source" 
+                                          FontSize="14" 
+                                          FontWeight="Medium" 
+                                          Foreground="White" 
+                                          Margin="0,0,0,4"/>
+                                <TextBlock Text="Choose the default source for package operations" 
+                                          FontSize="12" 
+                                          Foreground="#94A3B8"/>
+                            </StackPanel>
+                            
+                            <ComboBox Grid.Column="1" 
+                                     Name="DefaultSourceComboBox"
+                                     SelectedItem="{Binding DefaultPackageSource}"
+                                     ItemsSource="{Binding PackageSources}"
+                                     Background="#475569"
+                                     Foreground="White"
+                                     BorderThickness="0"
+                                     CornerRadius="6"
+                                     Padding="12,8"
+                                     MinWidth="120"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Auto-accept agreements" 
+                                          FontSize="14" 
+                                          FontWeight="Medium" 
+                                          Foreground="White" 
+                                          Margin="0,0,0,4"/>
+                                <TextBlock Text="Automatically accept source and package agreements" 
+                                          FontSize="12" 
+                                          Foreground="#94A3B8"/>
+                            </StackPanel>
+                            
+                            <CheckBox Grid.Column="1" 
+                                     Name="AutoAcceptAgreementsCheckBox"
+                                     IsChecked="{Binding AutoAcceptAgreements}"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                
+                <!-- AI Settings -->
+                <Border Background="#334155" 
+                       CornerRadius="8" 
+                       Padding="24" 
+                       Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="🤖 AI Configuration" 
+                                  FontSize="18" 
+                                  FontWeight="SemiBold" 
+                                  Foreground="White" 
+                                  Margin="0,0,0,16"/>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Enable AI recommendations" 
+                                          FontSize="14" 
+                                          FontWeight="Medium" 
+                                          Foreground="White" 
+                                          Margin="0,0,0,4"/>
+                                <TextBlock Text="Use AI-powered package recommendations" 
+                                          FontSize="12" 
+                                          Foreground="#94A3B8"/>
+                            </StackPanel>
+                            
+                            <CheckBox Grid.Column="1" 
+                                     Name="EnableAICheckBox"
+                                     IsChecked="{Binding EnableAI}"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="AI model" 
+                                          FontSize="14" 
+                                          FontWeight="Medium" 
+                                          Foreground="White" 
+                                          Margin="0,0,0,4"/>
+                                <TextBlock Text="Select the AI model for recommendations" 
+                                          FontSize="12" 
+                                          Foreground="#94A3B8"/>
+                            </StackPanel>
+                            
+                            <ComboBox Grid.Column="1" 
+                                     Name="AIModelComboBox"
+                                     SelectedItem="{Binding SelectedAIModel}"
+                                     ItemsSource="{Binding AvailableAIModels}"
+                                     Background="#475569"
+                                     Foreground="White"
+                                     BorderThickness="0"
+                                     CornerRadius="6"
+                                     Padding="12,8"
+                                     MinWidth="150"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Action Buttons -->
+                <Grid Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <Button Grid.Column="1" 
+                           Name="SaveSettingsBtn"
+                           Command="{Binding SaveSettingsCommand}"
+                           
+                           Background="#10B981"
+                           Foreground="White"
+                           BorderThickness="0"
+                           CornerRadius="8"
+                           Padding="16,12"
+                           Margin="0,0,16,0"
+                           Cursor="Hand">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="💾" FontSize="14" Margin="0,0,8,0"/>
+                            <TextBlock Text="Save Settings" FontSize="14" FontWeight="Medium"/>
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Grid.Column="2" 
+                           Name="ResetSettingsBtn"
+                           Command="{Binding ResetSettingsCommand}"
+                           
+                           Background="#EF4444"
+                           Foreground="White"
+                           BorderThickness="0"
+                           CornerRadius="8"
+                           Padding="16,12"
+                           Cursor="Hand">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔄" FontSize="14" Margin="0,0,8,0"/>
+                            <TextBlock Text="Reset to Defaults" FontSize="14" FontWeight="Medium"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
+
+

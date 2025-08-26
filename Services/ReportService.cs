@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using UpgradeApp.Models;
+using WingetWizard.Avalonia.Models;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Avalonia.Services
 {
     /// <summary>
     /// Service class responsible for AI report management and export operations
     /// Handles saving individual package reports and generating comprehensive markdown exports
     /// </summary>
-    public class ReportService
+    public class ReportService : IReportService
     {
         private readonly string _reportsDirectory;
         private readonly Dictionary<string, string> _savedReports;
@@ -293,3 +293,6 @@ namespace UpgradeApp.Services
         }
     }
 }
+
+
+
