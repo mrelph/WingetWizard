@@ -158,7 +158,7 @@ SUPPORT
 - Use health check feature for diagnostics
 
 ===============================================================================
-Version: 2.1
+Version: 2.4
 Last Updated: January 2025
 For technical support, review the DOCUMENTATION.md file
 ===============================================================================

@@ -1,29 +1,130 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="WingetWizard" Language="1033" Version="2.4.0.0" Manufacturer="GeekSuave Labs" UpgradeCode="12345678-1234-1234-1234-123456789012">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+  <Product Id="*" 
+           Name="WingetWizard" 
+           Language="1033" 
+           Version="2.4.0.0" 
+           Manufacturer="GeekSuave Labs" 
+           UpgradeCode="12345678-1234-1234-1234-123456789012">
+    
+    <Package InstallerVersion="200" 
+             Compressed="yes" 
+             InstallScope="perMachine"
+             Description="AI-Enhanced Windows Package Manager"
+             Comments="WingetWizard - Professional package management with AI-powered recommendations"
+             Manufacturer="GeekSuave Labs" />
     
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate />
     
+    <!-- Application Icon -->
+    <Icon Id="AppIcon" SourceFile="Logo1.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    
+    <!-- UI Configuration -->
+    <UIRef Id="WixUI_Minimal" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    
     <Feature Id="ProductFeature" Title="WingetWizard" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="ShortcutComponents" />
+      <ComponentRef Id="DesktopShortcut" />
     </Feature>
   </Product>
   
+  <!-- Directory Structure -->
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLFOLDER" Name="WingetWizard" />
       </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="WingetWizard" />
+      </Directory>
+      <Directory Id="DesktopFolder" Name="Desktop" />
     </Directory>
   </Fragment>
   
+  <!-- Application Files -->
   <Fragment>
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-      <Component Id="MainExecutable">
-        <File Id="WingetWizardExe" Source="bin\Release\net6.0-windows\win-x64\publish\WingetWizard.exe" KeyPath="yes" />
+      <!-- Main Executable -->
+      <Component Id="MainExecutable" Guid="11111111-1111-1111-1111-111111111111">
+        <File Id="WingetWizardExe" 
+              Source="$(var.PublishDir)WingetWizard.exe" 
+              KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut"
+                    Directory="ApplicationProgramsFolder"
+                    Name="WingetWizard"
+                    Description="AI-Enhanced Windows Package Manager"
+                    Icon="AppIcon"
+                    WorkingDirectory="INSTALLFOLDER" />
+        </File>
+      </Component>
+      
+      <!-- Supporting DLLs -->
+      <Component Id="D3DCompilerDll" Guid="22222222-2222-2222-2222-222222222222">
+        <File Id="D3DCompilerDll" Source="$(var.PublishDir)D3DCompiler_47_cor3.dll" />
+      </Component>
+      
+      <Component Id="PenImcDll" Guid="33333333-3333-3333-3333-333333333333">
+        <File Id="PenImcDll" Source="$(var.PublishDir)PenImc_cor3.dll" />
+      </Component>
+      
+      <Component Id="PresentationNativeDll" Guid="44444444-4444-4444-4444-444444444444">
+        <File Id="PresentationNativeDll" Source="$(var.PublishDir)PresentationNative_cor3.dll" />
+      </Component>
+      
+      <Component Id="VcRuntimeDll" Guid="55555555-5555-5555-5555-555555555555">
+        <File Id="VcRuntimeDll" Source="$(var.PublishDir)vcruntime140_cor3.dll" />
+      </Component>
+      
+      <Component Id="WpfGfxDll" Guid="66666666-6666-6666-6666-666666666666">
+        <File Id="WpfGfxDll" Source="$(var.PublishDir)wpfgfx_cor3.dll" />
+      </Component>
+      
+      <!-- Resources -->
+      <Component Id="WinGetLogo" Guid="77777777-7777-7777-7777-777777777777">
+        <File Id="WinGetLogo" Source="$(var.PublishDir)WinGetLogo.png" />
+      </Component>
+      
+      <!-- Configuration Example -->
+      <Component Id="ConfigExample" Guid="88888888-8888-8888-8888-888888888888">
+        <File Id="ConfigExample" Source="config.json.example" />
       </Component>
     </ComponentGroup>
+  </Fragment>
+  
+  <!-- Shortcuts Component Group (for cleanup) -->
+  <Fragment>
+    <ComponentGroup Id="ShortcutComponents" Directory="ApplicationProgramsFolder">
+      <!-- Start Menu Folder Cleanup -->
+      <Component Id="StartMenuFolder" Guid="BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB">
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU"
+                      Key="Software\GeekSuave Labs\WingetWizard"
+                      Name="Installed"
+                      Type="integer"
+                      Value="1"
+                      KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+    
+    <!-- Desktop Shortcut Component -->
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC">
+      <Shortcut Id="DesktopShortcut"
+                Name="WingetWizard"
+                Description="AI-Enhanced Windows Package Manager"
+                Target="[INSTALLFOLDER]WingetWizard.exe"
+                Icon="AppIcon"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="DesktopFolder" On="uninstall" />
+      <RegistryValue Root="HKCU"
+                    Key="Software\GeekSuave Labs\WingetWizard"
+                    Name="DesktopShortcut"
+                    Type="integer"
+                    Value="1"
+                    KeyPath="yes" />
+    </Component>
   </Fragment>
 </Wix>

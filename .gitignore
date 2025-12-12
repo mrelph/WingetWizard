@@ -39,6 +39,19 @@ bld/
 *.nupkg
 packages/
 
+# IDE and Editor folders
+.amazonq/
+.claude/
+.cursor/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Local build scripts
+build-and-run*.bat
+
 # ========================================
 # CONFIGURATION FILES (SENSITIVE DATA)
 # ========================================
@@ -123,3 +136,6 @@ dist/*.rpm
 
 # Allow distribution source folders
 !dist/*/
+
+# Publish output (build artifacts)
+publish/

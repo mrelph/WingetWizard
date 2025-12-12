@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WingetWizard.Models;
@@ -102,6 +103,24 @@ namespace WingetWizard
         private string selectedAiModel = "claude-sonnet-4-20250514";   // Claude model selection
         private bool verboseLogging = false;                           // Verbose logging setting
         private bool isDarkMode = true;                                // OS theme detection
+        
+        // Cancellation support
+        private CancellationTokenSource? _currentOperationCancellation;
+        private Button? _cancelButton;
+        private DateTime? _operationStartTime;
+        private int _operationCurrent = 0;
+        private int _operationTotal = 0;
+        
+        // Retry support
+        private List<string> _failedPackageIds = new();
+        private string _lastOperationType = "";
+        
+        // Progress persistence
+        private readonly string _progressStatePath = Path.Combine(Application.StartupPath, "operation_state.json");
+        
+        // Operation history
+        private readonly string _operationHistoryPath = Path.Combine(Application.StartupPath, "operation_history.json");
+        private readonly List<OperationHistoryEntry> _operationHistory = new();
 
         /// <summary>
         /// Creates modern typography with intelligent font fallback system.
@@ -450,6 +469,10 @@ namespace WingetWizard
             
             System.Diagnostics.Debug.WriteLine($"AI service initialized with primary provider: {primaryProvider}");
             
+            // Load operation history and progress state
+            LoadOperationHistory();
+            LoadProgressState();
+            
             InitializeComponent();
             
             // Start performance metrics collection timer (every 30 seconds)
@@ -460,6 +483,15 @@ namespace WingetWizard
             };
             metricsTimer.Tick += (s, e) => _performanceMetricsService.CollectSystemMetrics();
             metricsTimer.Start();
+            
+            // Handle form closing to save state
+            this.FormClosing += MainForm_FormClosing;
+        }
+        
+        private void MainForm_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            SaveProgressState();
+            SaveOperationHistory();
         }
 
         private void InitializeComponent()
@@ -544,8 +576,31 @@ namespace WingetWizard
                 Padding = new Padding(25, 5, 0, 0)
             };
             
+            // Cancel button for long-running operations
+            _cancelButton = new Button
+            {
+                Text = "✕ Cancel",
+                Font = CreateFont(9F, FontStyle.Regular),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(239, 68, 68),
+                FlatStyle = FlatStyle.Flat,
+                Dock = DockStyle.Right,
+                Width = 80,
+                Height = 25,
+                Margin = new Padding(5),
+                Visible = false,
+                Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom
+            };
+            _cancelButton.FlatAppearance.BorderSize = 0;
+            _cancelButton.Click += (s, e) =>
+            {
+                _currentOperationCancellation?.Cancel();
+                LogMessage("Operation cancelled by user");
+            };
+            
             progressPanel.Controls.Add(progressBar);
             progressPanel.Controls.Add(statusLabel);
+            progressPanel.Controls.Add(_cancelButton);
             progressPanel.Tag = "progress";
             
             // Version label in top-right corner
@@ -731,13 +786,20 @@ namespace WingetWizard
         // Button click handlers using service classes
         private async void BtnCheck_Click(object? sender, EventArgs e)
         {
+            // Create cancellation token source
+            _currentOperationCancellation?.Dispose();
+            _currentOperationCancellation = new CancellationTokenSource();
+            var token = _currentOperationCancellation.Token;
+
             var operationId = _performanceMetricsService.StartOperation("CheckForUpdates");
             try
             {
-                ShowProgress("Checking for available updates...");
+                ShowProgress("Checking for available updates...", 0, 0, showCancel: true);
                 LogMessage("Checking for available updates...");
                 var source = cmbSource.SelectedItem?.ToString() ?? "winget";
                 var apps = await _packageService.CheckForUpdatesAsync(source, verboseLogging);
+                
+                token.ThrowIfCancellationRequested();
                 
                 lock (upgradableAppsLock)
                 {
@@ -746,19 +808,31 @@ namespace WingetWizard
                 }
                 
                 UpdatePackageList();
-                LogMessage($"Found {apps.Count} packages with available updates");
+                var message = apps.Count > 0 
+                    ? $"Found {apps.Count} package(s) with available updates"
+                    : "No updates available";
+                LogMessage(message);
+                ShowNotification(message, apps.Count > 0 ? NotificationType.Success : NotificationType.Info, 4000);
                 HideWelcomePanel();
                 
                 _performanceMetricsService.EndOperation(operationId, true);
             }
+            catch (OperationCanceledException)
+            {
+                LogMessage("Check updates operation cancelled by user");
+                ShowNotification("Operation cancelled", NotificationType.Warning, 3000);
+                _performanceMetricsService.EndOperation(operationId, false);
+            }
             catch (Exception ex)
             {
                 LogMessage($"Error checking updates: {ex.Message}");
-                MessageBox.Show($"Failed to check updates: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowNotification($"Failed to check updates: {ex.Message}", NotificationType.Error, 5000);
                 _performanceMetricsService.EndOperation(operationId, false);
             }
             finally
             {
+                _currentOperationCancellation?.Dispose();
+                _currentOperationCancellation = null;
                 HideProgress();
             }
         }
@@ -768,39 +842,91 @@ namespace WingetWizard
             var selectedItems = lstApps.CheckedItems;
             if (selectedItems.Count == 0)
             {
-                MessageBox.Show("Please select packages to upgrade", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowNotification("Please select packages to upgrade", NotificationType.Info);
                 return;
             }
 
+            // Create cancellation token source
+            _currentOperationCancellation?.Dispose();
+            _currentOperationCancellation = new CancellationTokenSource();
+            var token = _currentOperationCancellation.Token;
+
             var operationId = _performanceMetricsService.StartOperation("UpgradePackages");
+            var successCount = 0;
+            var failCount = 0;
+            var failedPackages = new List<string>();
+            _lastOperationType = "Upgrade";
+            var startTime = DateTime.Now;
+            
             try
             {
-                ShowProgress($"Upgrading {selectedItems.Count} packages...");
-                LogMessage($"Upgrading {selectedItems.Count} selected packages...");
-                var successCount = 0;
-                var failCount = 0;
+                var total = selectedItems.Count;
+                ShowProgress($"Upgrading {total} packages...", 0, total, showCancel: true);
+                LogMessage($"Upgrading {total} selected packages...");
                 
+                var current = 0;
                 foreach (ListViewItem item in selectedItems)
                 {
+                    token.ThrowIfCancellationRequested();
+                    
                     var packageId = item.SubItems[1].Text; // ID column
-                    UpdateProgress($"Upgrading {item.SubItems[0].Text}...");
+                    var packageName = item.SubItems[0].Text;
+                    current++;
+                    UpdateProgress($"Upgrading {packageName}...", current, total);
+                    
+                    // Periodically save progress state
+                    if (current % 5 == 0)
+                    {
+                        SaveProgressState();
+                    }
+                    
                     var (success, message) = await _packageService.UpgradePackageAsync(packageId, verboseLogging);
                     
-                    if (success)
+                    if (this.InvokeRequired)
                     {
-                        item.SubItems[5].Text = "✅ Upgraded"; // Status column
-                        LogMessage($"Successfully upgraded {item.SubItems[0].Text}");
-                        successCount++;
+                        this.Invoke(() =>
+                        {
+                            if (success)
+                            {
+                                item.SubItems[5].Text = "✅ Upgraded";
+                                successCount++;
+                            }
+                            else
+                            {
+                                item.SubItems[5].Text = "❌ Failed";
+                                failCount++;
+                                failedPackages.Add(packageName);
+                            }
+                        });
                     }
                     else
                     {
-                        item.SubItems[5].Text = "❌ Failed"; // Status column
-                        LogMessage($"Failed to upgrade {item.SubItems[0].Text}: {message}");
-                        failCount++;
+                        if (success)
+                        {
+                            item.SubItems[5].Text = "✅ Upgraded";
+                            successCount++;
+                        }
+                        else
+                        {
+                            item.SubItems[5].Text = "❌ Failed";
+                            failCount++;
+                            failedPackages.Add(packageName);
+                        }
                     }
+                    
+                    LogMessage(success ? $"Successfully upgraded {packageName}" : $"Failed to upgrade {packageName}: {message}");
+                    
+                    // Log to history
+                    AddOperationHistory("Upgrade", packageName, packageId, success, message);
                 }
                 
+                var duration = DateTime.Now - startTime;
                 var overallSuccess = failCount == 0;
+                
+                // Log batch operation to history
+                AddOperationHistory("Upgrade Batch", "", "", overallSuccess, 
+                    $"Upgraded {total} packages", total, successCount, failCount, duration);
+                
                 _performanceMetricsService.EndOperation(operationId, overallSuccess);
                 
                 // Record individual package upgrade metrics
@@ -812,61 +938,145 @@ namespace WingetWizard
                 {
                     _performanceMetricsService.AddMetric("PackagesUpgradeFailed", failCount);
                 }
+                
+                // Show summary notification
+                if (failCount == 0)
+                {
+                    ShowNotification($"✅ Successfully upgraded {successCount} package(s)", NotificationType.Success, 5000);
+                }
+                else
+                {
+                    var summary = $"⚠️ Upgrade complete: {successCount} succeeded, {failCount} failed";
+                    ShowNotification(summary, NotificationType.Warning, 5000);
+                    
+                    // Show detailed summary dialog for failures
+                    if (failCount > 0)
+                    {
+                        var summaryText = $"Upgrade Summary:\n\n✅ Successful: {successCount}\n❌ Failed: {failCount}";
+                        if (failedPackages.Count > 0)
+                        {
+                            summaryText += "\n\nFailed packages:\n• " + string.Join("\n• ", failedPackages.Take(10));
+                            if (failedPackages.Count > 10)
+                                summaryText += $"\n... and {failedPackages.Count - 10} more";
+                        }
+                        
+                        var result = MessageBox.Show(
+                            summaryText + "\n\nWould you like to retry failed packages?",
+                            "Upgrade Summary",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Information
+                        );
+                        
+                        if (result == DialogResult.Yes)
+                        {
+                            // Retry failed packages
+                            RetryFailedPackages("upgrade", failedPackages);
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                LogMessage("Upgrade operation cancelled by user");
+                ShowNotification("Operation cancelled", NotificationType.Warning, 3000);
+                _performanceMetricsService.EndOperation(operationId, false);
             }
             catch (Exception ex)
             {
                 LogMessage($"Error during upgrade: {ex.Message}");
-                MessageBox.Show($"Upgrade failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowNotification($"Upgrade failed: {ex.Message}", NotificationType.Error, 5000);
                 _performanceMetricsService.EndOperation(operationId, false);
             }
             finally
             {
+                _currentOperationCancellation?.Dispose();
+                _currentOperationCancellation = null;
                 HideProgress();
             }
         }
 
         private async void BtnUpgradeAll_Click(object? sender, EventArgs e)
         {
+            // Add confirmation for bulk operation
+            var result = MessageBox.Show(
+                "This will upgrade ALL available packages. This may take a while.\n\nContinue?",
+                "Confirm Bulk Upgrade",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+                
+            if (result != DialogResult.Yes)
+                return;
+
+            // Create cancellation token source
+            _currentOperationCancellation?.Dispose();
+            _currentOperationCancellation = new CancellationTokenSource();
+            var token = _currentOperationCancellation.Token;
+
             var operationId = _performanceMetricsService.StartOperation("UpgradeAllPackages");
+            _lastOperationType = "UpgradeAll";
+            var startTime = DateTime.Now;
+            
             try
             {
-                ShowProgress("Upgrading all available packages...");
+                ShowProgress("Upgrading all available packages...", 0, 0, showCancel: true);
                 LogMessage("Upgrading all available packages...");
                 var (success, message) = await _packageService.UpgradeAllPackagesAsync(verboseLogging);
+                
+                token.ThrowIfCancellationRequested();
+                
+                var duration = DateTime.Now - startTime;
+                
+                // Log to history
+                AddOperationHistory("Upgrade All", "", "", success, message, 0, success ? 1 : 0, success ? 0 : 1, duration);
                 
                 if (success)
                 {
                     LogMessage("All packages upgraded successfully");
-                    MessageBox.Show("All packages have been upgraded successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    ShowNotification("✅ All packages upgraded successfully!", NotificationType.Success, 5000);
                     _performanceMetricsService.EndOperation(operationId, true);
                 }
                 else
                 {
                     LogMessage($"Upgrade all failed: {message}");
-                    MessageBox.Show($"Upgrade failed: {message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    ShowNotification($"Upgrade failed: {message}", NotificationType.Error, 5000);
                     _performanceMetricsService.EndOperation(operationId, false);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                LogMessage("Bulk upgrade operation cancelled by user");
+                ShowNotification("Operation cancelled", NotificationType.Warning, 3000);
+                _performanceMetricsService.EndOperation(operationId, false);
             }
             catch (Exception ex)
             {
                 LogMessage($"Error during bulk upgrade: {ex.Message}");
-                MessageBox.Show($"Bulk upgrade failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowNotification($"Bulk upgrade failed: {ex.Message}", NotificationType.Error, 5000);
                 _performanceMetricsService.EndOperation(operationId, false);
             }
             finally
             {
+                _currentOperationCancellation?.Dispose();
+                _currentOperationCancellation = null;
                 HideProgress();
             }
         }
 
         private async void BtnListAll_Click(object? sender, EventArgs e)
         {
+            // Create cancellation token source
+            _currentOperationCancellation?.Dispose();
+            _currentOperationCancellation = new CancellationTokenSource();
+            var token = _currentOperationCancellation.Token;
+
             try
             {
-                ShowProgress("Listing all installed applications...");
+                ShowProgress("Listing all installed applications...", 0, 0, showCancel: true);
                 LogMessage("Listing all installed applications...");
                 var source = cmbSource.SelectedItem?.ToString() ?? "winget";
                 var apps = await _packageService.ListAllAppsAsync(source, verboseLogging);
+                
+                token.ThrowIfCancellationRequested();
                 
                 lock (upgradableAppsLock)
                 {
@@ -875,16 +1085,25 @@ namespace WingetWizard
                 }
                 
                 UpdatePackageList();
-                LogMessage($"Found {apps.Count} installed applications");
+                var message = $"Found {apps.Count} installed application(s)";
+                LogMessage(message);
+                ShowNotification(message, NotificationType.Success, 4000);
                 HideWelcomePanel();
+            }
+            catch (OperationCanceledException)
+            {
+                LogMessage("List all operation cancelled by user");
+                ShowNotification("Operation cancelled", NotificationType.Warning, 3000);
             }
             catch (Exception ex)
             {
                 LogMessage($"Error listing applications: {ex.Message}");
-                MessageBox.Show($"Failed to list applications: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowNotification($"Failed to list applications: {ex.Message}", NotificationType.Error, 5000);
             }
             finally
             {
+                _currentOperationCancellation?.Dispose();
+                _currentOperationCancellation = null;
                 HideProgress();
             }
         }
@@ -894,34 +1113,108 @@ namespace WingetWizard
             var selectedItems = lstApps.CheckedItems;
             if (selectedItems.Count == 0)
             {
-                MessageBox.Show("Please select packages to install", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowNotification("Please select packages to install", NotificationType.Info);
                 return;
             }
 
+            // Create cancellation token source
+            _currentOperationCancellation?.Dispose();
+            _currentOperationCancellation = new CancellationTokenSource();
+            var token = _currentOperationCancellation.Token;
+
+            var successCount = 0;
+            var failCount = 0;
+            var failedPackages = new List<string>();
+            _lastOperationType = "Install";
+            var startTime = DateTime.Now;
+
             try
             {
-                LogMessage($"Installing {selectedItems.Count} selected packages...");
+                var total = selectedItems.Count;
+                ShowProgress($"Installing {total} packages...", 0, total, showCancel: true);
+                LogMessage($"Installing {total} selected packages...");
+                
+                var current = 0;
                 foreach (ListViewItem item in selectedItems)
                 {
+                    token.ThrowIfCancellationRequested();
+                    
                     var packageId = item.SubItems[1].Text; // ID column
+                    var packageName = item.SubItems[0].Text;
+                    current++;
+                    UpdateProgress($"Installing {packageName}...", current, total);
+                    
                     var (success, message) = await _packageService.InstallPackageAsync(packageId, verboseLogging);
                     
-                    if (success)
+                    if (this.InvokeRequired)
                     {
-                        item.SubItems[5].Text = "✅ Installed"; // Status column
-                        LogMessage($"Successfully installed {item.SubItems[0].Text}");
+                        this.Invoke(() =>
+                        {
+                            if (success)
+                            {
+                                item.SubItems[5].Text = "✅ Installed";
+                                successCount++;
+                            }
+                            else
+                            {
+                                item.SubItems[5].Text = "❌ Failed";
+                                failCount++;
+                                failedPackages.Add(packageName);
+                            }
+                        });
                     }
                     else
                     {
-                        item.SubItems[5].Text = "❌ Failed"; // Status column
-                        LogMessage($"Failed to install {item.SubItems[0].Text}: {message}");
+                        if (success)
+                        {
+                            item.SubItems[5].Text = "✅ Installed";
+                            successCount++;
+                        }
+                        else
+                        {
+                            item.SubItems[5].Text = "❌ Failed";
+                            failCount++;
+                            failedPackages.Add(packageName);
+                        }
                     }
+                    
+                    LogMessage(success ? $"Successfully installed {packageName}" : $"Failed to install {packageName}: {message}");
+                    
+                    // Log to history
+                    AddOperationHistory("Install", packageName, packageId, success, message);
                 }
+                
+                var duration = DateTime.Now - startTime;
+                // Log batch operation to history
+                AddOperationHistory("Install Batch", "", "", failCount == 0, 
+                    $"Installed {total} packages", total, successCount, failCount, duration);
+                
+                // Show summary
+                if (failCount == 0)
+                {
+                    ShowNotification($"✅ Successfully installed {successCount} package(s)", NotificationType.Success, 5000);
+                }
+                else
+                {
+                    var summary = $"⚠️ Installation complete: {successCount} succeeded, {failCount} failed";
+                    ShowNotification(summary, NotificationType.Warning, 5000);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                LogMessage("Installation operation cancelled by user");
+                ShowNotification("Operation cancelled", NotificationType.Warning, 3000);
             }
             catch (Exception ex)
             {
                 LogMessage($"Error during installation: {ex.Message}");
-                MessageBox.Show($"Installation failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowNotification($"Installation failed: {ex.Message}", NotificationType.Error, 5000);
+            }
+            finally
+            {
+                _currentOperationCancellation?.Dispose();
+                _currentOperationCancellation = null;
+                HideProgress();
             }
         }
 
@@ -944,30 +1237,104 @@ namespace WingetWizard
             if (result != DialogResult.Yes)
                 return;
 
+            // Create cancellation token source
+            _currentOperationCancellation?.Dispose();
+            _currentOperationCancellation = new CancellationTokenSource();
+            var token = _currentOperationCancellation.Token;
+
+            var successCount = 0;
+            var failCount = 0;
+            var failedPackages = new List<string>();
+            _lastOperationType = "Uninstall";
+            var startTime = DateTime.Now;
+
             try
             {
-                LogMessage($"Uninstalling {selectedItems.Count} selected packages...");
+                var total = selectedItems.Count;
+                ShowProgress($"Uninstalling {total} packages...", 0, total, showCancel: true);
+                LogMessage($"Uninstalling {total} selected packages...");
+                
+                var current = 0;
                 foreach (ListViewItem item in selectedItems)
                 {
+                    token.ThrowIfCancellationRequested();
+                    
                     var packageId = item.SubItems[1].Text; // ID column
+                    var packageName = item.SubItems[0].Text;
+                    current++;
+                    UpdateProgress($"Uninstalling {packageName}...", current, total);
+                    
                     var (success, message) = await _packageService.UninstallPackageAsync(packageId, verboseLogging);
                     
-                    if (success)
+                    if (this.InvokeRequired)
                     {
-                        item.SubItems[5].Text = "✅ Uninstalled"; // Status column
-                        LogMessage($"Successfully uninstalled {item.SubItems[0].Text}");
+                        this.Invoke(() =>
+                        {
+                            if (success)
+                            {
+                                item.SubItems[5].Text = "✅ Uninstalled";
+                                successCount++;
+                            }
+                            else
+                            {
+                                item.SubItems[5].Text = "❌ Failed";
+                                failCount++;
+                                failedPackages.Add(packageName);
+                            }
+                        });
                     }
                     else
                     {
-                        item.SubItems[5].Text = "❌ Failed"; // Status column
-                        LogMessage($"Failed to uninstall {item.SubItems[0].Text}: {message}");
+                        if (success)
+                        {
+                            item.SubItems[5].Text = "✅ Uninstalled";
+                            successCount++;
+                        }
+                        else
+                        {
+                            item.SubItems[5].Text = "❌ Failed";
+                            failCount++;
+                            failedPackages.Add(packageName);
+                        }
                     }
+                    
+                    LogMessage(success ? $"Successfully uninstalled {packageName}" : $"Failed to uninstall {packageName}: {message}");
+                    
+                    // Log to history
+                    AddOperationHistory("Uninstall", packageName, packageId, success, message);
                 }
+                
+                var duration = DateTime.Now - startTime;
+                // Log batch operation to history
+                AddOperationHistory("Uninstall Batch", "", "", failCount == 0, 
+                    $"Uninstalled {total} packages", total, successCount, failCount, duration);
+                
+                // Show summary
+                if (failCount == 0)
+                {
+                    ShowNotification($"✅ Successfully uninstalled {successCount} package(s)", NotificationType.Success, 5000);
+                }
+                else
+                {
+                    var summary = $"⚠️ Uninstall complete: {successCount} succeeded, {failCount} failed";
+                    ShowNotification(summary, NotificationType.Warning, 5000);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                LogMessage("Uninstall operation cancelled by user");
+                ShowNotification("Operation cancelled", NotificationType.Warning, 3000);
             }
             catch (Exception ex)
             {
                 LogMessage($"Error during uninstallation: {ex.Message}");
-                MessageBox.Show($"Uninstallation failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowNotification($"Uninstallation failed: {ex.Message}", NotificationType.Error, 5000);
+            }
+            finally
+            {
+                _currentOperationCancellation?.Dispose();
+                _currentOperationCancellation = null;
+                HideProgress();
             }
         }
 
@@ -976,39 +1343,107 @@ namespace WingetWizard
             var selectedItems = lstApps.CheckedItems;
             if (selectedItems.Count == 0)
             {
-                MessageBox.Show("Please select packages to repair", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowNotification("Please select packages to repair", NotificationType.Info);
                 return;
             }
 
+            // Create cancellation token source
+            _currentOperationCancellation?.Dispose();
+            _currentOperationCancellation = new CancellationTokenSource();
+            var token = _currentOperationCancellation.Token;
+
+            var successCount = 0;
+            var failCount = 0;
+            var failedPackages = new List<string>();
+            _lastOperationType = "Repair";
+            var startTime = DateTime.Now;
+
             try
             {
-                ShowProgress($"Repairing {selectedItems.Count} packages...");
-                LogMessage($"Repairing {selectedItems.Count} selected packages...");
+                var total = selectedItems.Count;
+                ShowProgress($"Repairing {total} packages...", 0, total, showCancel: true);
+                LogMessage($"Repairing {total} selected packages...");
+                
+                var current = 0;
                 foreach (ListViewItem item in selectedItems)
                 {
+                    token.ThrowIfCancellationRequested();
+                    
                     var packageId = item.SubItems[1].Text; // ID column
-                    UpdateProgress($"Repairing {item.SubItems[0].Text}...");
+                    var packageName = item.SubItems[0].Text;
+                    current++;
+                    UpdateProgress($"Repairing {packageName}...", current, total);
+                    
                     var (success, message) = await _packageService.RepairPackageAsync(packageId, verboseLogging);
                     
-                    if (success)
+                    if (this.InvokeRequired)
                     {
-                        item.SubItems[5].Text = "✅ Repaired"; // Status column
-                        LogMessage($"Successfully repaired {item.SubItems[0].Text}");
+                        this.Invoke(() =>
+                        {
+                            if (success)
+                            {
+                                item.SubItems[5].Text = "✅ Repaired";
+                                successCount++;
+                            }
+                            else
+                            {
+                                item.SubItems[5].Text = "❌ Failed";
+                                failCount++;
+                                failedPackages.Add(packageName);
+                            }
+                        });
                     }
                     else
                     {
-                        item.SubItems[5].Text = "❌ Failed"; // Status column
-                        LogMessage($"Failed to repair {item.SubItems[0].Text}: {message}");
+                        if (success)
+                        {
+                            item.SubItems[5].Text = "✅ Repaired";
+                            successCount++;
+                        }
+                        else
+                        {
+                            item.SubItems[5].Text = "❌ Failed";
+                            failCount++;
+                            failedPackages.Add(packageName);
+                        }
                     }
+                    
+                    LogMessage(success ? $"Successfully repaired {packageName}" : $"Failed to repair {packageName}: {message}");
+                    
+                    // Log to history
+                    AddOperationHistory("Repair", packageName, packageId, success, message);
                 }
+                
+                var duration = DateTime.Now - startTime;
+                // Log batch operation to history
+                AddOperationHistory("Repair Batch", "", "", failCount == 0, 
+                    $"Repaired {total} packages", total, successCount, failCount, duration);
+                
+                // Show summary
+                if (failCount == 0)
+                {
+                    ShowNotification($"✅ Successfully repaired {successCount} package(s)", NotificationType.Success, 5000);
+                }
+                else
+                {
+                    var summary = $"⚠️ Repair complete: {successCount} succeeded, {failCount} failed";
+                    ShowNotification(summary, NotificationType.Warning, 5000);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                LogMessage("Repair operation cancelled by user");
+                ShowNotification("Operation cancelled", NotificationType.Warning, 3000);
             }
             catch (Exception ex)
             {
                 LogMessage($"Error during repair: {ex.Message}");
-                MessageBox.Show($"Repair failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowNotification($"Repair failed: {ex.Message}", NotificationType.Error, 5000);
             }
             finally
             {
+                _currentOperationCancellation?.Dispose();
+                _currentOperationCancellation = null;
                 HideProgress();
             }
         }
@@ -1018,18 +1453,32 @@ namespace WingetWizard
             var selectedItems = lstApps.CheckedItems;
             if (selectedItems.Count == 0)
             {
-                MessageBox.Show("Please select packages for AI research", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowNotification("Please select packages for AI research", NotificationType.Info);
                 return;
             }
 
+            // Create cancellation token source
+            _currentOperationCancellation?.Dispose();
+            _currentOperationCancellation = new CancellationTokenSource();
+            var token = _currentOperationCancellation.Token;
+
+            _lastOperationType = "Research";
+            var startTime = DateTime.Now;
+            var successCount = 0;
+            var failCount = 0;
+
             try
             {
-                ShowProgress("Starting AI research...");
-                LogMessage($"Starting AI research for {selectedItems.Count} packages...");
+                var total = selectedItems.Count;
+                ShowProgress("Starting AI research...", 0, total, showCancel: true);
+                LogMessage($"Starting AI research for {total} packages...");
                 var recommendations = new List<(UpgradableApp app, string recommendation)>();
                 
+                var current = 0;
                 foreach (ListViewItem item in selectedItems)
                 {
+                    token.ThrowIfCancellationRequested();
+                    
                     var app = new UpgradableApp
                     {
                         Name = item.SubItems[0].Text,
@@ -1038,34 +1487,79 @@ namespace WingetWizard
                         Available = item.SubItems[3].Text
                     };
                     
-                    UpdateProgress($"Researching {app.Name}...");
+                    current++;
+                    UpdateProgress($"Researching {app.Name}...", current, total);
                     LogMessage($"Researching {app.Name}...");
-                    var recommendation = await _aiService.GetAIRecommendationAsync(app);
-                    recommendations.Add((app, recommendation));
+                    
+                    try
+                    {
+                        var recommendation = await _aiService.GetAIRecommendationAsync(app);
+                        recommendations.Add((app, recommendation));
+                        successCount++;
+                        
+                        // Log to history
+                        AddOperationHistory("Research", app.Name, app.Id, true, "AI research completed");
+                    }
+                    catch (Exception ex)
+                    {
+                        failCount++;
+                        LogMessage($"Failed to research {app.Name}: {ex.Message}");
+                        AddOperationHistory("Research", app.Name, app.Id, false, ex.Message);
+                    }
                     
                     // Update the AI Recommendation column
-                    item.SubItems[6].Text = SafeSubstring(recommendation, 50);
+                    if (this.InvokeRequired)
+                    {
+                        this.Invoke(() => 
+                        {
+                            if (recommendations.Count > 0 && recommendations.Last().app.Id == app.Id)
+                            {
+                                item.SubItems[6].Text = SafeSubstring(recommendations.Last().recommendation, 50);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        if (recommendations.Count > 0 && recommendations.Last().app.Id == app.Id)
+                        {
+                            item.SubItems[6].Text = SafeSubstring(recommendations.Last().recommendation, 50);
+                        }
+                    }
                 }
                 
-                UpdateProgress("Saving reports...");
+                token.ThrowIfCancellationRequested();
+                UpdateProgress("Saving reports...", total, total);
+                
                 // Save individual reports
                 var markdownContent = _reportService.CreateMarkdownContent(recommendations, true, selectedAiModel);
                 var reportsSaved = _reportService.SaveIndividualPackageReports(markdownContent);
                 
+                var duration = DateTime.Now - startTime;
+                // Log batch operation to history
+                AddOperationHistory("Research Batch", "", "", failCount == 0, 
+                    $"Researched {total} packages, {reportsSaved} reports saved", total, successCount, failCount, duration);
+                
                 LogMessage($"AI research complete! {reportsSaved} individual reports saved.");
-                MessageBox.Show($"AI research complete!\n\n{reportsSaved} individual reports have been saved to the AI_Reports folder.", 
-                    "Research Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowNotification($"✅ AI research complete! {reportsSaved} report(s) saved to AI_Reports folder", 
+                    NotificationType.Success, 6000);
                 
                 // Update status columns with report links
                 UpdateStatusColumnsWithReportLinks();
             }
+            catch (OperationCanceledException)
+            {
+                LogMessage("AI research operation cancelled by user");
+                ShowNotification("Operation cancelled", NotificationType.Warning, 3000);
+            }
             catch (Exception ex)
             {
                 LogMessage($"Error during AI research: {ex.Message}");
-                MessageBox.Show($"AI research failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowNotification($"AI research failed: {ex.Message}", NotificationType.Error, 5000);
             }
             finally
             {
+                _currentOperationCancellation?.Dispose();
+                _currentOperationCancellation = null;
                 HideProgress();
             }
         }
@@ -1095,8 +1589,8 @@ namespace WingetWizard
                     }
                     
                     LogMessage($"Package list exported to {saveDialog.FileName}");
-                    MessageBox.Show($"Package list exported successfully to:\n{saveDialog.FileName}", 
-                        "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    ShowNotification($"✅ Package list exported to {Path.GetFileName(saveDialog.FileName)}", 
+                        NotificationType.Success, 4000);
                 }
             }
             catch (Exception ex)
@@ -1130,6 +1624,7 @@ namespace WingetWizard
             settingsMenu.Items.Add("🏥 Health Check", null, (s, args) => ShowHealthCheck());
             settingsMenu.Items.Add("⚙️ Config Validation", null, (s, args) => ShowConfigValidation());
             settingsMenu.Items.Add("📊 Performance Metrics", null, (s, args) => ShowPerformanceMetrics());
+            settingsMenu.Items.Add("📜 Operation History", null, (s, args) => ShowOperationHistory());
             settingsMenu.Items.Add("-");
             settingsMenu.Items.Add("Reset API Keys", null, (s, args) => ResetApiKeys());
             
@@ -1380,11 +1875,11 @@ namespace WingetWizard
         }
 
         // Progress indicator methods
-        private void ShowProgress(string message)
+        private void ShowProgress(string message, int current = 0, int total = 0, bool showCancel = false)
         {
             if (this.InvokeRequired)
             {
-                this.Invoke(new Action(() => ShowProgress(message)));
+                this.Invoke(new Action(() => ShowProgress(message, current, total, showCancel)));
                 return;
             }
             
@@ -1392,19 +1887,83 @@ namespace WingetWizard
             if (progressPanel != null)
             {
                 progressPanel.Visible = true;
-                statusLabel.Text = message;
+                if (current == 0 && total > 0)
+                {
+                    _operationStartTime = DateTime.Now;
+                }
+                _operationCurrent = current;
+                _operationTotal = total;
+                
+                if (total > 0)
+                {
+                    // Determinate progress with percentage
+                    progressBar.Style = ProgressBarStyle.Continuous;
+                    progressBar.Maximum = total;
+                    progressBar.Value = Math.Min(current, total);
+                    var percentage = (int)((double)current / total * 100);
+                    
+                    // Calculate ETA if we have timing data
+                    string etaText = "";
+                    if (current > 0 && _operationStartTime.HasValue)
+                    {
+                        var elapsed = DateTime.Now - _operationStartTime.Value;
+                        var avgTimePerItem = elapsed.TotalMilliseconds / current;
+                        var remaining = (total - current) * avgTimePerItem;
+                        var eta = TimeSpan.FromMilliseconds(remaining);
+                        etaText = $" - ETA: {eta:mm\\:ss}";
+                    }
+                    
+                    statusLabel.Text = $"{message} ({current}/{total} - {percentage}%){etaText}";
+                }
+                else
+                {
+                    // Indeterminate progress
+                    progressBar.Style = ProgressBarStyle.Marquee;
+                    statusLabel.Text = message;
+                }
+                
+                // Show/hide cancel button
+                if (_cancelButton != null)
+                {
+                    _cancelButton.Visible = showCancel;
+                }
             }
         }
         
-        private void UpdateProgress(string message)
+        private void UpdateProgress(string message, int current = 0, int total = 0)
         {
             if (this.InvokeRequired)
             {
-                this.Invoke(new Action(() => UpdateProgress(message)));
+                this.Invoke(new Action(() => UpdateProgress(message, current, total)));
                 return;
             }
             
-            statusLabel.Text = message;
+            _operationCurrent = current;
+            _operationTotal = total;
+            
+            if (total > 0)
+            {
+                // Update determinate progress
+                progressBar.Value = Math.Min(current, total);
+                var percentage = (int)((double)current / total * 100);
+                
+                // Calculate ETA
+                string etaText = "";
+                if (current > 0 && _operationStartTime.HasValue)
+                {
+                    var elapsed = DateTime.Now - _operationStartTime.Value;
+                    var avgTimePerItem = elapsed.TotalMilliseconds / current;
+                    var remaining = (total - current) * avgTimePerItem;
+                    var eta = TimeSpan.FromMilliseconds(remaining);
+                    etaText = $" - ETA: {eta:mm\\:ss}";
+                }
+                
+                statusLabel.Text = $"{message} ({current}/{total} - {percentage}%){etaText}";
+            }
+            else
+            {
+                statusLabel.Text = message;
+            }
         }
         
         private void HideProgress()
@@ -1420,7 +1979,66 @@ namespace WingetWizard
             {
                 progressPanel.Visible = false;
                 statusLabel.Text = "Ready";
+                progressBar.Style = ProgressBarStyle.Marquee;
+                progressBar.Value = 0;
+                
+                if (_cancelButton != null)
+                {
+                    _cancelButton.Visible = false;
+                }
             }
+            
+            _operationStartTime = null;
+            _operationCurrent = 0;
+            _operationTotal = 0;
+        }
+        
+        // Notification system to replace MessageBox spam
+        private void ShowNotification(string message, NotificationType type = NotificationType.Info, int durationMs = 3000)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => ShowNotification(message, type, durationMs)));
+                return;
+            }
+            
+            // Use status bar for non-critical notifications
+            var color = type switch
+            {
+                NotificationType.Success => Color.FromArgb(34, 197, 94),
+                NotificationType.Warning => Color.FromArgb(245, 158, 11),
+                NotificationType.Error => Color.FromArgb(239, 68, 68),
+                _ => GetThemeColor(Color.FromArgb(100, 200, 255), Color.FromArgb(0, 120, 215))
+            };
+            
+            statusLabel.ForeColor = color;
+            statusLabel.Text = message;
+            LogMessage(message);
+            
+            // Auto-clear after duration
+            if (durationMs > 0)
+            {
+                var timer = new System.Windows.Forms.Timer { Interval = durationMs };
+                timer.Tick += (s, e) =>
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                    if (statusLabel.Text == message) // Only clear if message hasn't changed
+                    {
+                        statusLabel.Text = "Ready";
+                        statusLabel.ForeColor = GetThemeColor(Color.FromArgb(100, 200, 255), Color.FromArgb(0, 120, 215));
+                    }
+                };
+                timer.Start();
+            }
+        }
+        
+        private enum NotificationType
+        {
+            Info,
+            Success,
+            Warning,
+            Error
         }
 
         // Helper methods for UI updates
@@ -3061,14 +3679,554 @@ Progress Tracking:
             }
         }
 
+        // Keyboard shortcuts
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            switch (keyData)
+            {
+                case Keys.F5:
+                    // Refresh - Check for updates
+                    if (btnCheck.Enabled)
+                    {
+                        BtnCheck_Click(null, EventArgs.Empty);
+                        return true;
+                    }
+                    break;
+                case Keys.Escape:
+                    // Cancel current operation
+                    if (_currentOperationCancellation != null && !_currentOperationCancellation.Token.IsCancellationRequested)
+                    {
+                        _currentOperationCancellation.Cancel();
+                        LogMessage("Operation cancelled via ESC key");
+                        return true;
+                    }
+                    // Close dialogs if no operation running
+                    if (this.ActiveControl is Form activeForm)
+                    {
+                        activeForm.Close();
+                        return true;
+                    }
+                    break;
+                case Keys.Control | Keys.U:
+                    // Upgrade selected
+                    if (btnUpgrade.Enabled)
+                    {
+                        BtnUpgrade_Click(null, EventArgs.Empty);
+                        return true;
+                    }
+                    break;
+                case Keys.Control | Keys.Shift | Keys.U:
+                    // Upgrade all
+                    if (btnUpgradeAll.Enabled)
+                    {
+                        BtnUpgradeAll_Click(null, EventArgs.Empty);
+                        return true;
+                    }
+                    break;
+                case Keys.Control | Keys.F:
+                    // Search & Install
+                    if (btnSearchInstall.Enabled)
+                    {
+                        BtnSearchInstall_Click(null, EventArgs.Empty);
+                        return true;
+                    }
+                    break;
+                case Keys.Control | Keys.R:
+                    // AI Research
+                    if (btnResearch.Enabled)
+                    {
+                        BtnResearch_Click(null, EventArgs.Empty);
+                        return true;
+                    }
+                    break;
+                case Keys.Control | Keys.L:
+                    // List all apps
+                    if (btnListAll.Enabled)
+                    {
+                        BtnListAll_Click(null, EventArgs.Empty);
+                        return true;
+                    }
+                    break;
+                case Keys.Control | Keys.A:
+                    // Select all packages
+                    if (lstApps.Items.Count > 0)
+                    {
+                        foreach (ListViewItem item in lstApps.Items)
+                        {
+                            item.Checked = true;
+                        }
+                        return true;
+                    }
+                    break;
+                case Keys.Control | Keys.D:
+                    // Deselect all packages
+                    if (lstApps.Items.Count > 0)
+                    {
+                        foreach (ListViewItem item in lstApps.Items)
+                        {
+                            item.Checked = false;
+                        }
+                        return true;
+                    }
+                    break;
+                case Keys.Control | Keys.E:
+                    // Export
+                    if (btnExport.Enabled)
+                    {
+                        ExportUpgradeList(null, EventArgs.Empty);
+                        return true;
+                    }
+                    break;
+                case Keys.Control | Keys.S:
+                    // Settings
+                    ShowSettingsMenu(null, EventArgs.Empty);
+                    return true;
+                case Keys.Control | Keys.H:
+                    // Help
+                    ShowHelpMenu(null, EventArgs.Empty);
+                    return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        // Retry failed packages
+        private async void RetryFailedPackages(string operationType, List<string> failedPackageNames)
+        {
+            if (failedPackageNames.Count == 0) return;
+
+            // Find the failed packages in the list
+            var failedItems = new List<ListViewItem>();
+            foreach (ListViewItem item in lstApps.Items)
+            {
+                if (failedPackageNames.Contains(item.SubItems[0].Text))
+                {
+                    item.Checked = true;
+                    failedItems.Add(item);
+                }
+            }
+
+            if (failedItems.Count == 0)
+            {
+                ShowNotification("Could not find failed packages to retry", NotificationType.Warning);
+                return;
+            }
+
+            // Create cancellation token source
+            _currentOperationCancellation?.Dispose();
+            _currentOperationCancellation = new CancellationTokenSource();
+            var token = _currentOperationCancellation.Token;
+
+            var successCount = 0;
+            var failCount = 0;
+            var operationId = _performanceMetricsService.StartOperation($"Retry{operationType}");
+            var startTime = DateTime.Now;
+
+            try
+            {
+                var total = failedItems.Count;
+                ShowProgress($"Retrying {total} failed package(s)...", 0, total, showCancel: true);
+                LogMessage($"Retrying {total} failed {operationType} operation(s)...");
+
+                var current = 0;
+                foreach (var item in failedItems)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    var packageId = item.SubItems[1].Text;
+                    var packageName = item.SubItems[0].Text;
+                    current++;
+                    UpdateProgress($"Retrying {packageName}...", current, total);
+
+                    var (success, message) = operationType.ToLower() switch
+                    {
+                        "upgrade" => await _packageService.UpgradePackageAsync(packageId, verboseLogging),
+                        "install" => await _packageService.InstallPackageAsync(packageId, verboseLogging),
+                        "uninstall" => await _packageService.UninstallPackageAsync(packageId, verboseLogging),
+                        "repair" => await _packageService.RepairPackageAsync(packageId, verboseLogging),
+                        _ => (false, "Unknown operation type")
+                    };
+
+                    if (this.InvokeRequired)
+                    {
+                        this.Invoke(() =>
+                        {
+                            if (success)
+                            {
+                                item.SubItems[5].Text = $"✅ {operationType}ed";
+                                successCount++;
+                            }
+                            else
+                            {
+                                item.SubItems[5].Text = "❌ Failed";
+                                failCount++;
+                            }
+                        });
+                    }
+                    else
+                    {
+                        if (success)
+                        {
+                            item.SubItems[5].Text = $"✅ {operationType}ed";
+                            successCount++;
+                        }
+                        else
+                        {
+                            item.SubItems[5].Text = "❌ Failed";
+                            failCount++;
+                        }
+                    }
+
+                    // Log to history
+                    AddOperationHistory($"Retry {operationType}", packageName, packageId, success, message);
+
+                    LogMessage(success 
+                        ? $"Successfully retried {packageName}" 
+                        : $"Retry failed for {packageName}: {message}");
+                }
+
+                var duration = DateTime.Now - startTime;
+                AddOperationHistory($"Retry {operationType} Batch", "", "", failCount == 0, 
+                    $"Retried {total} packages", total, successCount, failCount, duration);
+
+                if (failCount == 0)
+                {
+                    ShowNotification($"✅ Successfully retried {successCount} package(s)", NotificationType.Success, 5000);
+                }
+                else
+                {
+                    ShowNotification($"⚠️ Retry complete: {successCount} succeeded, {failCount} still failed", 
+                        NotificationType.Warning, 5000);
+                }
+
+                _performanceMetricsService.EndOperation(operationId, failCount == 0);
+            }
+            catch (OperationCanceledException)
+            {
+                LogMessage("Retry operation cancelled by user");
+                ShowNotification("Retry cancelled", NotificationType.Warning, 3000);
+                _performanceMetricsService.EndOperation(operationId, false);
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"Error during retry: {ex.Message}");
+                ShowNotification($"Retry failed: {ex.Message}", NotificationType.Error, 5000);
+                _performanceMetricsService.EndOperation(operationId, false);
+            }
+            finally
+            {
+                _currentOperationCancellation?.Dispose();
+                _currentOperationCancellation = null;
+                HideProgress();
+            }
+        }
+
+        // Progress persistence
+        private void SaveProgressState()
+        {
+            try
+            {
+                if (_operationTotal > 0 && _operationCurrent < _operationTotal)
+                {
+                    var state = new
+                    {
+                        OperationType = _lastOperationType,
+                        Current = _operationCurrent,
+                        Total = _operationTotal,
+                        StartTime = _operationStartTime,
+                        Timestamp = DateTime.Now
+                    };
+
+                    var json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(_progressStatePath, json, Encoding.UTF8);
+                    LogMessage($"Progress state saved: {_operationCurrent}/{_operationTotal}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"Failed to save progress state: {ex.Message}");
+            }
+        }
+
+        private void LoadProgressState()
+        {
+            try
+            {
+                if (File.Exists(_progressStatePath))
+                {
+                    var json = File.ReadAllText(_progressStatePath, Encoding.UTF8);
+                    var state = JsonSerializer.Deserialize<JsonElement>(json);
+
+                    if (state.TryGetProperty("Timestamp", out var timestampProp))
+                    {
+                        var timestamp = timestampProp.GetDateTime();
+                        // Only restore if less than 1 hour old
+                        if (DateTime.Now - timestamp < TimeSpan.FromHours(1))
+                        {
+                            var operationType = state.TryGetProperty("OperationType", out var opType) 
+                                ? opType.GetString() : "";
+                            var current = state.TryGetProperty("Current", out var curr) ? curr.GetInt32() : 0;
+                            var total = state.TryGetProperty("Total", out var tot) ? tot.GetInt32() : 0;
+
+                            if (total > 0 && current < total)
+                            {
+                                var result = MessageBox.Show(
+                                    $"Previous {operationType} operation was interrupted.\n\nProgress: {current}/{total}\n\nWould you like to see the operation history?",
+                                    "Resume Operation?",
+                                    MessageBoxButtons.YesNo,
+                                    MessageBoxIcon.Question);
+
+                                if (result == DialogResult.Yes)
+                                {
+                                    ShowOperationHistory();
+                                }
+                            }
+                        }
+                    }
+
+                    // Clean up old state file
+                    File.Delete(_progressStatePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"Failed to load progress state: {ex.Message}");
+            }
+        }
+
+        // Operation history
+        private void AddOperationHistory(string operationType, string packageName, string packageId, 
+            bool success, string message, int total = 0, int successCount = 0, int failCount = 0, TimeSpan? duration = null)
+        {
+            try
+            {
+                var entry = new OperationHistoryEntry
+                {
+                    Timestamp = DateTime.Now,
+                    OperationType = operationType,
+                    PackageName = packageName,
+                    PackageId = packageId,
+                    Success = success,
+                    Message = message,
+                    TotalPackages = total,
+                    SuccessCount = successCount,
+                    FailCount = failCount,
+                    Duration = duration
+                };
+
+                lock (_operationHistory)
+                {
+                    _operationHistory.Add(entry);
+                    // Keep only last 1000 entries
+                    if (_operationHistory.Count > 1000)
+                    {
+                        _operationHistory.RemoveAt(0);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"Failed to add operation history: {ex.Message}");
+            }
+        }
+
+        private void SaveOperationHistory()
+        {
+            try
+            {
+                lock (_operationHistory)
+                {
+                    if (_operationHistory.Count > 0)
+                    {
+                        var json = JsonSerializer.Serialize(_operationHistory, new JsonSerializerOptions 
+                        { 
+                            WriteIndented = true,
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                        });
+                        File.WriteAllText(_operationHistoryPath, json, Encoding.UTF8);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"Failed to save operation history: {ex.Message}");
+            }
+        }
+
+        private void LoadOperationHistory()
+        {
+            try
+            {
+                if (File.Exists(_operationHistoryPath))
+                {
+                    var json = File.ReadAllText(_operationHistoryPath, Encoding.UTF8);
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var loaded = JsonSerializer.Deserialize<List<OperationHistoryEntry>>(json, options);
+                    
+                    if (loaded != null)
+                    {
+                        lock (_operationHistory)
+                        {
+                            _operationHistory.Clear();
+                            _operationHistory.AddRange(loaded);
+                        }
+                        LogMessage($"Loaded {_operationHistory.Count} operation history entries");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"Failed to load operation history: {ex.Message}");
+            }
+        }
+
+        private void ShowOperationHistory()
+        {
+            var historyForm = new Form
+            {
+                Text = "Operation History",
+                Size = new Size(900, 600),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.Sizable,
+                MinimumSize = new Size(700, 400)
+            };
+            ApplyThemeToForm(historyForm);
+
+            var mainPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 1,
+                Padding = new Padding(10)
+            };
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            // Header with filter
+            var headerPanel = new Panel { Dock = DockStyle.Fill };
+            var filterLabel = new Label
+            {
+                Text = "Filter:",
+                Location = new Point(10, 15),
+                AutoSize = true
+            };
+            ApplyThemeToControl(filterLabel);
+
+            var filterCombo = new ComboBox
+            {
+                Location = new Point(60, 12),
+                Width = 150,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            filterCombo.Items.AddRange(new[] { "All", "Upgrade", "Install", "Uninstall", "Repair", "Research", "Retry" });
+            filterCombo.SelectedIndex = 0;
+            ApplyThemeToControl(filterCombo);
+
+            var clearButton = new Button
+            {
+                Text = "Clear History",
+                Location = new Point(220, 10),
+                Width = 100,
+                Height = 30
+            };
+            ApplyThemeToControl(clearButton);
+            clearButton.Click += (s, e) =>
+            {
+                if (MessageBox.Show("Clear all operation history?", "Confirm", 
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    lock (_operationHistory)
+                    {
+                        _operationHistory.Clear();
+                    }
+                    SaveOperationHistory();
+                    historyForm.Close();
+                    ShowNotification("Operation history cleared", NotificationType.Success);
+                }
+            };
+
+            headerPanel.Controls.Add(filterLabel);
+            headerPanel.Controls.Add(filterCombo);
+            headerPanel.Controls.Add(clearButton);
+
+            // History list
+            var historyList = new ListView
+            {
+                Dock = DockStyle.Fill,
+                View = View.Details,
+                FullRowSelect = true,
+                GridLines = false,
+                Columns = {
+                    new ColumnHeader { Text = "Time", Width = 150 },
+                    new ColumnHeader { Text = "Operation", Width = 100 },
+                    new ColumnHeader { Text = "Package", Width = 200 },
+                    new ColumnHeader { Text = "Status", Width = 80 },
+                    new ColumnHeader { Text = "Details", Width = 300 }
+                }
+            };
+            ApplyThemeToControl(historyList);
+
+            void RefreshHistory()
+            {
+                historyList.Items.Clear();
+                var filter = filterCombo.SelectedItem?.ToString() ?? "All";
+
+                lock (_operationHistory)
+                {
+                    var filtered = filter == "All"
+                        ? _operationHistory
+                        : _operationHistory.Where(e => e.OperationType.Contains(filter, StringComparison.OrdinalIgnoreCase));
+
+                    foreach (var entry in filtered.OrderByDescending(e => e.Timestamp).Take(500))
+                    {
+                        var item = new ListViewItem(entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"));
+                        item.SubItems.Add(entry.OperationType);
+                        item.SubItems.Add(string.IsNullOrEmpty(entry.PackageName) ? entry.PackageId : entry.PackageName);
+                        item.SubItems.Add(entry.Success ? "✅ Success" : "❌ Failed");
+                        
+                        var details = entry.Message;
+                        if (entry.TotalPackages > 0)
+                        {
+                            details = $"{entry.SuccessCount}/{entry.TotalPackages} succeeded";
+                            if (entry.FailCount > 0)
+                                details += $", {entry.FailCount} failed";
+                        }
+                        if (entry.Duration.HasValue)
+                        {
+                            details += $" ({entry.Duration.Value:mm\\:ss})";
+                        }
+                        item.SubItems.Add(details);
+
+                        item.ForeColor = entry.Success 
+                            ? Color.FromArgb(34, 197, 94) 
+                            : Color.FromArgb(239, 68, 68);
+
+                        historyList.Items.Add(item);
+                    }
+                }
+            }
+
+            filterCombo.SelectedIndexChanged += (s, e) => RefreshHistory();
+            RefreshHistory();
+
+            mainPanel.Controls.Add(headerPanel, 0, 0);
+            mainPanel.Controls.Add(historyList, 0, 1);
+
+            historyForm.Controls.Add(mainPanel);
+            historyForm.ShowDialog(this);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing) 
             { 
+                // Save progress before disposing
+                SaveProgressState();
+                
                 buttonToolTips?.Dispose();
                 _aiService?.Dispose();
                 _healthCheckService?.Dispose();
                 _performanceMetricsService?.Dispose();
+                _currentOperationCancellation?.Dispose();
             }
             base.Dispose(disposing);
         }

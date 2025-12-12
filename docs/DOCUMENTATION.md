@@ -26,11 +26,13 @@ WingetWizard is a beautifully designed, Claude-inspired Windows desktop applicat
 │  └── Settings Dialogs (AI/UI Configuration)                │
 ├─────────────────────────────────────────────────────────────┤
 │  Models Layer                                              │
-│  └── UpgradableApp.cs (Package Data Model)                 │
+│  ├── UpgradableApp.cs (Package Data Model)                 │
+│  ├── PackageSearchResult.cs (Search Result Model)          │
+│  └── HealthCheckResult.cs (Health Check Model)             │
 ├─────────────────────────────────────────────────────────────┤
 │  Services Layer (Business Logic)                           │
 │  ├── PackageService.cs (Secure Winget Operations + Search) │
-│  ├── PackageDiscoveryService.cs (Package Search & Install) │
+│  ├── PackageDiscoveryService.cs (Advanced Package Discovery)│
 │  ├── AIService.cs (Claude + Perplexity Integration)        │
 │  ├── BedrockService.cs (AWS Bedrock Integration)           │
 │  ├── BedrockModelDiscoveryService.cs (Model Discovery)     │
@@ -438,7 +440,9 @@ dotnet run
 WingetWizard/
 ├── MainForm.cs             # Modern UI with service integration
 ├── Models/                 # Data models and entities
-│   └── UpgradableApp.cs    # Package data model
+│   ├── UpgradableApp.cs    # Package data model
+│   ├── PackageSearchResult.cs # Search result model
+│   └── HealthCheckResult.cs   # Health check model
 ├── Services/               # Business logic services
 │   ├── PackageService.cs       # Secure package management operations
 │   ├── AIService.cs            # AI integration and recommendations
@@ -480,11 +484,28 @@ WingetWizard/
   - Clean separation of data structure from business logic
   - Used throughout the application for package representation
 
+- **`PackageSearchResult.cs`**: Data model for package search results
+  - Properties: Name, Id, Version, Source, Publisher, Description, Homepage
+  - Static parsing methods: `FromSearchLine()`, `FromShowOutput()`
+  - Used in search and discovery operations
+
+- **`HealthCheckResult.cs`**: Data model for system health check results
+  - Properties: IsHealthy, Issues, Warnings, Metrics, CheckTimestamp
+  - Helper methods: `AddIssue()`, `AddWarning()`, `AddMetric()`, `GetSummary()`
+  - Used for system diagnostics and monitoring
+
 #### **Services Layer**
 - **`PackageService.cs`**: Core package management functionality
-  - Methods: `ListAllAppsAsync()`, `CheckForUpdatesAsync()`, `UpgradePackageAsync()`
+  - Methods: `ListAllAppsAsync()`, `CheckForUpdatesAsync()`, `UpgradePackageAsync()`, `SearchPackagesAsync()`
   - Handles all winget command execution and PowerShell integration
   - Thread-safe operations with comprehensive error handling
+  - Secure command execution with injection prevention
+
+- **`PackageDiscoveryService.cs`**: Advanced package discovery and search
+  - Methods: `SearchPackagesAsync()`, `GetPackageDetailsAsync()`, `InstallPackagesAsync()`
+  - Manages search results and selected packages
+  - Provides batch installation capabilities
+  - Integrates with PackageService for secure operations
   
 - **`AIService.cs`**: AI integration and recommendation engine
   - Supports Claude AI, Perplexity API, and AWS Bedrock providers
@@ -610,7 +631,7 @@ The application builds to a single executable file containing all dependencies:
 
 ---
 
-**Version**: 2.1 - Modular Architecture  
+**Version**: 2.4 - Search & Discovery  
 **Last Updated**: January 2025  
 **License**: Private Development Project  
 **Author**: Mark Relph (GeekSuave Labs)  
@@ -618,12 +639,12 @@ The application builds to a single executable file containing all dependencies:
 **Built With**: Q Developer, Claude and Cursor - WingetWizard makes package management magical! 🧿
 
 ### 🎯 **What's New in v2.4**
-- **Modular Architecture**: Complete refactoring from monolithic to service-based design
-- **Dependency Injection**: Services are properly injected into the main form
-- **Separation of Concerns**: Business logic separated from UI code
-- **Enhanced Maintainability**: Each component has a single, focused responsibility
-- **Improved Testability**: Services can be unit tested independently
-- **Better Scalability**: Easy to add new features and AI providers
-- **AWS Bedrock Integration**: Enterprise AI platform with multiple model options
-- **Enhanced Security**: Comprehensive input validation and threat protection
-- **Performance Optimization**: Multi-tier caching and virtualization for large datasets
+- **Complete Package Search & Installation**: Professional search interface with batch installation
+- **PackageDiscoveryService**: Advanced package discovery and search management
+- **PackageSearchResult Model**: Comprehensive search result data model
+- **Enhanced PackageService**: Full search functionality integrated into core service
+- **UI Polish**: Consistent styling, responsive design, and theme integration
+- **Performance Optimization**: Fast search execution (1-3 seconds) with efficient parsing
+- **Error Handling**: Comprehensive error recovery and user-friendly feedback
+- **Multi-Provider AI**: Primary/fallback LLM configuration with automatic failover
+- **Enterprise Security**: OWASP-compliant validation and DPAPI encryption

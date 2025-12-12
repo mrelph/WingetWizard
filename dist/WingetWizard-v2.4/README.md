@@ -125,20 +125,19 @@ WingetWizard is a sophisticated Windows Forms application that combines the powe
 ## 🏗️ Architecture
 
 ### Service Layer
-- **PackageService**: Core winget operations including search, install, upgrade, and uninstall
-- **PackageDiscoveryService**: Advanced package search, selection, and batch installation management
-- **AIService**: Multi-provider AI integration (Claude, Perplexity, AWS Bedrock) with automatic fallback
-- **BedrockService**: AWS Bedrock enterprise AI platform integration
-- **BedrockModelDiscoveryService**: Dynamic model discovery and availability checking
-- **HealthCheckService**: System health monitoring and diagnostics
+- **PackageService**: Core winget operations including **complete search functionality**
+- **PackageDiscoveryService**: Package search, selection, and installation management
+- **AIService**: Multi-provider AI integration with fallback
+- **BedrockModelDiscoveryService**: Dynamic model discovery
+- **HealthCheckService**: System monitoring and diagnostics
 - **PerformanceMetricsService**: Performance tracking and optimization
 - **ConfigurationValidationService**: Settings and API validation
-- **SecureSettingsService**: Windows DPAPI encrypted credential storage
-- **ReportService**: AI report generation, management, and persistence
-- **SettingsService**: Configuration and user preferences management
-- **CachingService**: Multi-tier caching system (memory, disk, network)
-- **SearchFilterService**: Advanced search and filtering capabilities
-- **VirtualizationService**: Large dataset handling and optimization
+- **SecureSettingsService**: Encrypted credential storage
+- **ReportService**: AI report generation and management
+- **SettingsService**: Configuration management
+- **CachingService**: Multi-tier caching system
+- **SearchFilterService**: Advanced search and filtering
+- **VirtualizationService**: Large dataset handling
 
 ### Thread Safety
 - **Lock-Free Operations**: Efficient concurrent package management
