@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -57,7 +58,36 @@ namespace WingetWizard
         // Application constants
         private const string APP_VERSION = "v2.4";
         private const int STATUS_COLUMN_INDEX = 5;
+        
+        // Modern color palette inspired by Cursor, Claude, Perplexity, Vercel
         private static readonly Color PRIMARY_BLUE = Color.FromArgb(59, 130, 246);
+        private static readonly Color ACCENT_BLUE = Color.FromArgb(99, 102, 241);      // Indigo accent
+        private static readonly Color SUCCESS_GREEN = Color.FromArgb(16, 185, 129);    // Emerald
+        private static readonly Color WARNING_AMBER = Color.FromArgb(245, 158, 11);     // Amber
+        private static readonly Color ERROR_RED = Color.FromArgb(239, 68, 68);          // Red
+        private static readonly Color NEUTRAL_GRAY = Color.FromArgb(107, 114, 128);    // Gray
+        private static readonly Color PURPLE_AI = Color.FromArgb(139, 92, 246);        // Purple
+        private static readonly Color ORANGE_ACCENT = Color.FromArgb(249, 115, 22);     // Orange
+        
+        // Background colors
+        private static readonly Color BG_PRIMARY = Color.FromArgb(255, 255, 255);      // White (light mode)
+        private static readonly Color BG_SECONDARY = Color.FromArgb(249, 250, 251);    // Gray-50
+        private static readonly Color BG_TERTIARY = Color.FromArgb(243, 244, 246);     // Gray-100
+        private static readonly Color BG_DARK_PRIMARY = Color.FromArgb(18, 18, 18);   // Near black (dark mode)
+        private static readonly Color BG_DARK_SECONDARY = Color.FromArgb(24, 24, 24); // Dark gray
+        private static readonly Color BG_DARK_TERTIARY = Color.FromArgb(30, 30, 30);   // Lighter dark gray
+        
+        // Text colors
+        private static readonly Color TEXT_PRIMARY = Color.FromArgb(17, 24, 39);       // Gray-900
+        private static readonly Color TEXT_SECONDARY = Color.FromArgb(107, 114, 128);  // Gray-500
+        private static readonly Color TEXT_TERTIARY = Color.FromArgb(156, 163, 175);  // Gray-400
+        private static readonly Color TEXT_DARK_PRIMARY = Color.FromArgb(243, 244, 246); // Gray-100
+        private static readonly Color TEXT_DARK_SECONDARY = Color.FromArgb(156, 163, 175); // Gray-400
+        private static readonly Color TEXT_DARK_TERTIARY = Color.FromArgb(107, 114, 128);   // Gray-500
+        
+        // Border colors
+        private static readonly Color BORDER_LIGHT = Color.FromArgb(229, 231, 235);     // Gray-200
+        private static readonly Color BORDER_DARK = Color.FromArgb(55, 65, 81);         // Gray-700
         // UI Controls - Modern button layout with Claude-inspired card design
         private Button btnCheck = null!;
         private Button btnUpgrade = null!;
@@ -159,7 +189,7 @@ namespace WingetWizard
             var welcomePanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = GetThemeColor(Color.FromArgb(15, 15, 15), Color.White),
+                BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
                 Visible = true
             };
 
@@ -226,22 +256,22 @@ namespace WingetWizard
                 logoImage.Image = bmp;
             }
 
-            // Main greeting label with personalized message
+            // Main greeting label with personalized message - refined typography
             var greetingLabel = new Label
             {
                 Text = $"{greeting}, {userName}",
-                Font = CreateFont(28F, FontStyle.Bold),
-                ForeColor = GetThemeColor(Color.FromArgb(100, 200, 255), Color.FromArgb(0, 120, 215)),
+                Font = CreateFont(32F, FontStyle.Bold),
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
                 AutoSize = true,
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
-            // Subtitle with CLI-style helpful tone
+            // Subtitle with refined helpful tone
             var subtitleLabel = new Label
             {
                 Text = "Ready to manage your packages? Choose an action below:",
-                Font = CreateFont(14F, FontStyle.Regular),
-                ForeColor = GetThemeColor(Color.FromArgb(180, 180, 180), Color.FromArgb(100, 100, 100)),
+                Font = CreateFont(15F, FontStyle.Regular),
+                ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY),
                 AutoSize = true,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -258,11 +288,11 @@ namespace WingetWizard
 
             var actionCards = new[]
             {
-                ("🔄 Check Updates", "Scan for available package updates", "Start here to see what's new", Color.FromArgb(55, 125, 255)),
-                ("🤖 AI Research", "Get intelligent upgrade recommendations", "AI-powered analysis and insights", Color.FromArgb(147, 51, 234)),
-                ("📋 List All Apps", "View your complete software inventory", "See everything installed", Color.FromArgb(107, 114, 128)),
-                ("📤 Export", "Save package information and reports", "Backup and share your data", Color.FromArgb(251, 146, 60)),
-                ("🚀 Quick Start", "Begin with recommended actions", "Let AI guide your journey", Color.FromArgb(34, 197, 94))
+                ("Check Updates", "Scan for available package updates", "Start here to see what's new", PRIMARY_BLUE),
+                ("AI Research", "Get intelligent upgrade recommendations", "AI-powered analysis and insights", PURPLE_AI),
+                ("List All Apps", "View your complete software inventory", "See everything installed", NEUTRAL_GRAY),
+                ("Export", "Save package information and reports", "Backup and share your data", ORANGE_ACCENT),
+                ("Quick Start", "Begin with recommended actions", "Let AI guide your journey", SUCCESS_GREEN)
             };
 
             foreach (var (title, description, subtitle, color) in actionCards)
@@ -271,22 +301,31 @@ namespace WingetWizard
                 actionsPanel.Controls.Add(card);
             }
 
-            // Add a fun CLI-style status bar
+            // Modern status bar with refined design
             var statusBar = new Panel
             {
-                Height = 30,
+                Height = 36,
                 Dock = DockStyle.Bottom,
-                BackColor = GetThemeColor(Color.FromArgb(25, 25, 25), Color.FromArgb(240, 240, 240))
+                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
+                Padding = new Padding(0, 0, 0, 1)
+            };
+            
+            // Add subtle top border
+            statusBar.Paint += (s, e) =>
+            {
+                var borderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
+                using var pen = new Pen(borderColor, 1);
+                e.Graphics.DrawLine(pen, 0, 0, statusBar.Width, 0);
             };
 
             var statusLabel = new Label
             {
                 Text = $"Ready • {DateTime.Now:HH:mm:ss} • WingetWizard {APP_VERSION}",
-                Font = CreateFont(10F, FontStyle.Regular),
-                ForeColor = GetThemeColor(Color.FromArgb(120, 120, 120), Color.FromArgb(100, 100, 100)),
+                Font = CreateFont(11F, FontStyle.Regular),
+                ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Dock = DockStyle.Fill,
-                Padding = new Padding(15, 0, 0, 0)
+                Padding = new Padding(24, 0, 0, 0)
             };
 
             statusBar.Controls.Add(statusLabel);
@@ -331,30 +370,36 @@ namespace WingetWizard
 
         private Panel CreateModernCard(string title, string description, string subtitle, Color accentColor)
         {
+            var isDark = isDarkMode;
             var card = new Panel
             {
-                Width = 200,
-                Height = 120,
-                BackColor = GetThemeColor(Color.FromArgb(25, 25, 25), Color.FromArgb(250, 250, 250)),
-                Margin = new Padding(10),
+                Width = 220,
+                Height = 140,
+                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
+                Margin = new Padding(12),
                 Cursor = Cursors.Hand,
-                Tag = title // Store the action for potential click handling
+                Tag = title, // Store the action for potential click handling
+                Padding = new Padding(20, 20, 20, 20)
             };
 
-            // Add subtle border
+            // Track hover state for border color
+            var isHovered = false;
+            
+            // Draw border with accent color on hover (single Paint handler)
             card.Paint += (s, e) =>
             {
-                using var pen = new Pen(Color.FromArgb(40, 40, 40), 1);
+                var borderColor = isHovered ? accentColor : GetThemeColor(BORDER_DARK, BORDER_LIGHT);
+                using var pen = new Pen(borderColor, isHovered ? 2 : 1);
                 e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
             };
 
-            // Title with accent color
+            // Title with accent color - refined typography
             var cardTitle = new Label
             {
                 Text = title,
-                Font = CreateFont(12F, FontStyle.Bold),
+                Font = CreateFont(14F, FontStyle.Bold),
                 ForeColor = accentColor,
-                Location = new Point(15, 15),
+                Location = new Point(20, 20),
                 AutoSize = true
             };
 
@@ -362,39 +407,42 @@ namespace WingetWizard
             var cardDesc = new Label
             {
                 Text = description,
-                Font = CreateFont(10F, FontStyle.Regular),
-                ForeColor = GetThemeColor(Color.FromArgb(200, 200, 200), Color.FromArgb(80, 80, 80)),
-                Location = new Point(15, 40),
-                Size = new Size(170, 30)
+                Font = CreateFont(11F, FontStyle.Regular),
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
+                Location = new Point(20, 48),
+                Size = new Size(180, 36),
+                AutoEllipsis = true
             };
 
             // Subtitle in smaller font
             var cardSubtitle = new Label
             {
                 Text = subtitle,
-                Font = CreateFont(9F, FontStyle.Italic),
-                ForeColor = GetThemeColor(Color.FromArgb(140, 140, 140), Color.FromArgb(120, 120, 120)),
-                Location = new Point(15, 75),
-                Size = new Size(170, 20)
+                Font = CreateFont(10F, FontStyle.Regular),
+                ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY),
+                Location = new Point(20, 88),
+                Size = new Size(180, 20),
+                AutoEllipsis = true
             };
 
-            // Add hover effect
-            var originalCardColor = GetThemeColor(Color.FromArgb(25, 25, 25), Color.FromArgb(250, 250, 250));
-            var hoverCardColor = GetThemeColor(Color.FromArgb(35, 35, 35), Color.FromArgb(240, 240, 240));
+            // Modern hover effect with smooth transition
+            var originalCardColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY);
+            var hoverCardColor = GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY);
             
             card.MouseEnter += (s, e) =>
             {
+                isHovered = true;
                 card.BackColor = hoverCardColor;
-                cardTitle.ForeColor = Color.FromArgb(
-                    Math.Min(255, accentColor.R + 30),
-                    Math.Min(255, accentColor.G + 30),
-                    Math.Min(255, accentColor.B + 30));
+                cardTitle.ForeColor = accentColor;
+                card.Invalidate();
             };
 
             card.MouseLeave += (s, e) =>
             {
+                isHovered = false;
                 card.BackColor = originalCardColor;
                 cardTitle.ForeColor = accentColor;
+                card.Invalidate();
             };
 
             card.Controls.Add(cardTitle);
@@ -497,10 +545,11 @@ namespace WingetWizard
         private void InitializeComponent()
         {
             this.Text = "WingetWizard - AI-Enhanced Package Manager";
-            this.Size = new Size(1000, 700); // Increased size for better modern feel
-            this.MinimumSize = new Size(900, 600);
+            this.Size = new Size(1200, 800); // Larger size for modern, spacious feel
+            this.MinimumSize = new Size(1000, 700);
             this.Font = CreateFont(11F); // Modern system font with fallback
             this.StartPosition = FormStartPosition.CenterScreen;
+            this.BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY);
             try { this.Icon = new Icon("Logo.ico"); } 
             catch (Exception ex) { LogMessage($"Icon load failed: {ex.Message}"); }
             
@@ -514,84 +563,122 @@ namespace WingetWizard
             };
             ApplySystemTheme();
 
-            // Modern header with app title and version
+            // Modern header with refined design
             var headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = GetThemeColor(Color.FromArgb(15, 15, 15), Color.FromArgb(240, 240, 240))
+                Height = 64,
+                BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
+                Padding = new Padding(0, 0, 0, 1) // Bottom border effect
+            };
+            
+            // Add subtle bottom border
+            headerPanel.Paint += (s, e) =>
+            {
+                var borderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
+                using var pen = new Pen(borderColor, 1);
+                e.Graphics.DrawLine(pen, 0, headerPanel.Height - 1, headerPanel.Width, headerPanel.Height - 1);
             };
 
             var headerLabel = new Label
             {
-                Text = "🧿 WingetWizard",
-                Font = CreateFont(18F, FontStyle.Bold),
-                ForeColor = GetThemeColor(Color.FromArgb(100, 200, 255), Color.FromArgb(0, 120, 215)),
+                Text = "WingetWizard",
+                Font = CreateFont(20F, FontStyle.Bold),
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Dock = DockStyle.Fill,
-                Padding = new Padding(25, 0, 0, 0)
+                Padding = new Padding(32, 0, 0, 0)
             };
 
-            var versionLabel = new Label
+            var subtitleLabel = new Label
             {
                 Text = "AI-Enhanced Package Manager",
-                Font = CreateFont(10F, FontStyle.Regular),
-                ForeColor = GetThemeColor(Color.FromArgb(140, 140, 140), Color.FromArgb(100, 100, 100)),
+                Font = CreateFont(11F, FontStyle.Regular),
+                ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY),
                 TextAlign = ContentAlignment.MiddleRight,
                 Dock = DockStyle.Right,
-                Padding = new Padding(0, 0, 25, 0),
+                Padding = new Padding(0, 0, 32, 0),
                 AutoSize = false,
-                Width = 250
+                Width = 280
             };
 
             headerPanel.Controls.Add(headerLabel);
-            headerPanel.Controls.Add(versionLabel);
+            headerPanel.Controls.Add(subtitleLabel);
             
-            // Add progress indicator panel
+            // Modern progress indicator panel
             var progressPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 35,
-                BackColor = GetThemeColor(Color.FromArgb(20, 20, 20), Color.FromArgb(235, 235, 235)),
-                Visible = false
+                Height = 40,
+                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
+                Visible = false,
+                Padding = new Padding(0, 0, 0, 1)
+            };
+            
+            // Add subtle bottom border
+            progressPanel.Paint += (s, e) =>
+            {
+                var borderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
+                using var pen = new Pen(borderColor, 1);
+                e.Graphics.DrawLine(pen, 0, progressPanel.Height - 1, progressPanel.Width, progressPanel.Height - 1);
             };
             
             progressBar = new ProgressBar
             {
                 Style = ProgressBarStyle.Marquee,
                 MarqueeAnimationSpeed = 30,
-                Height = 4,
+                Height = 3,
                 Dock = DockStyle.Top,
-                BackColor = Color.FromArgb(30, 30, 30),
-                ForeColor = Color.FromArgb(100, 200, 255)
+                BackColor = GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY),
+                ForeColor = PRIMARY_BLUE
             };
             
             statusLabel = new Label
             {
                 Text = "Ready",
-                Font = CreateFont(10F, FontStyle.Regular),
-                ForeColor = GetThemeColor(Color.FromArgb(100, 200, 255), Color.FromArgb(0, 120, 215)),
+                Font = CreateFont(11F, FontStyle.Regular),
+                ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Dock = DockStyle.Fill,
-                Padding = new Padding(25, 5, 0, 0)
+                Padding = new Padding(32, 8, 0, 0)
             };
             
-            // Cancel button for long-running operations
+            // Modern cancel button for long-running operations
             _cancelButton = new Button
             {
-                Text = "✕ Cancel",
-                Font = CreateFont(9F, FontStyle.Regular),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(239, 68, 68),
+                Text = "Cancel",
+                Font = CreateFont(10F, FontStyle.Regular),
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
+                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
                 FlatStyle = FlatStyle.Flat,
+                FlatAppearance = {
+                    BorderSize = 1,
+                    BorderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT)
+                },
                 Dock = DockStyle.Right,
-                Width = 80,
-                Height = 25,
-                Margin = new Padding(5),
+                Width = 90,
+                Height = 28,
+                Margin = new Padding(8, 6, 32, 6),
+                Padding = new Padding(12, 6, 12, 6),
                 Visible = false,
-                Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom
+                Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
+                Cursor = Cursors.Hand
             };
-            _cancelButton.FlatAppearance.BorderSize = 0;
+            
+            // Hover effect for cancel button
+            _cancelButton.MouseEnter += (s, e) =>
+            {
+                _cancelButton.BackColor = ERROR_RED;
+                _cancelButton.ForeColor = Color.White;
+                _cancelButton.FlatAppearance.BorderColor = ERROR_RED;
+            };
+            
+            _cancelButton.MouseLeave += (s, e) =>
+            {
+                _cancelButton.BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY);
+                _cancelButton.ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
+                _cancelButton.FlatAppearance.BorderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
+            };
             _cancelButton.Click += (s, e) =>
             {
                 _currentOperationCancellation?.Cancel();
@@ -616,46 +703,39 @@ namespace WingetWizard
 
             var topPanel = new TableLayoutPanel { 
                 Dock = DockStyle.Top, Height = 140, ColumnCount = 9, RowCount = 2, 
-                Padding = new Padding(25), BackColor = GetThemeColor(Color.FromArgb(20, 20, 20), Color.FromArgb(245, 245, 245))
+                Padding = new Padding(32, 20, 32, 20), 
+                BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY)
             };
             float[] colWidths = { 11F, 11F, 11F, 11F, 11F, 12F, 11F, 11F, 11F };
             float[] rowHeights = { 55F, 55F };
             for (int i = 0; i < 9; i++) topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, colWidths[i]));
             for (int i = 0; i < 2; i++) topPanel.RowStyles.Add(new RowStyle(SizeType.Percent, rowHeights[i]));
             
-            // Modern vibrant color palette inspired by contemporary apps
-            var primaryBlue = Color.FromArgb(59, 130, 246);      // Modern blue
-            var successGreen = Color.FromArgb(34, 197, 94);      // Vibrant green
-            var accentOrange = Color.FromArgb(249, 115, 22);     // Modern orange
-            var warningAmber = Color.FromArgb(245, 158, 11);     // Warm amber
-            var purpleAI = Color.FromArgb(147, 51, 234);         // AI purple
-            var neutralGray = Color.FromArgb(107, 114, 128);     // Sophisticated gray
-            var darkBlue = Color.FromArgb(30, 58, 138);          // Deep blue
-            var darkGreen = Color.FromArgb(20, 83, 45);          // Forest green
-            var crimsonRed = Color.FromArgb(239, 68, 68);        // Modern red
-
+            // Modern refined color palette - professional and subtle
             (btnCheck, btnUpgrade, btnUpgradeAll, btnListAll, btnResearch, btnLogs, btnExport, btnHelp, btnSettings) = 
-                (CreateButton("🔄 Check Updates", primaryBlue, "Check for available package updates"),
-                 CreateButton("⬆️ Upgrade Selected", successGreen, "Upgrade only the selected packages"),
-                 CreateButton("🚀 Upgrade All", darkGreen, "Upgrade all available packages at once"),
-                 CreateButton("📋 List All Apps", neutralGray, "Show all installed applications"),
-                 CreateButton("🤖 AI Research", purpleAI, "Get AI-powered package recommendations"),
-                 CreateButton("📄 Show Logs", Color.FromArgb(75, 85, 99), "Toggle log output visibility"), 
-                 CreateButton("📤 Export", accentOrange, "Export package list to file"),
-                 CreateButton("❓ Help", darkBlue, "Show help menu and about information"), 
-                 CreateButton("⚙️ Settings", Color.FromArgb(55, 65, 81), "Configure application settings"));
+                (CreateModernButton("Check Updates", PRIMARY_BLUE, "Check for available package updates"),
+                 CreateModernButton("Upgrade Selected", SUCCESS_GREEN, "Upgrade only the selected packages"),
+                 CreateModernButton("Upgrade All", SUCCESS_GREEN, "Upgrade all available packages at once"),
+                 CreateModernButton("List All Apps", NEUTRAL_GRAY, "Show all installed applications"),
+                 CreateModernButton("AI Research", PURPLE_AI, "Get AI-powered package recommendations"),
+                 CreateModernButton("Show Logs", NEUTRAL_GRAY, "Toggle log output visibility"), 
+                 CreateModernButton("Export", ORANGE_ACCENT, "Export package list to file"),
+                 CreateModernButton("Help", ACCENT_BLUE, "Show help menu and about information"), 
+                 CreateModernButton("Settings", NEUTRAL_GRAY, "Configure application settings"));
             
             (btnInstall, btnUninstall, btnRepair) = (
-                CreateButton("📦 Install Selected", successGreen, "Install the selected packages"),
-                CreateButton("🗑️ Uninstall Selected", crimsonRed, "Uninstall the selected packages"),
-                CreateButton("🔧 Repair Selected", warningAmber, "Repair the selected packages"));
+                CreateModernButton("Install Selected", SUCCESS_GREEN, "Install the selected packages"),
+                CreateModernButton("Uninstall Selected", ERROR_RED, "Uninstall the selected packages"),
+                CreateModernButton("Repair Selected", WARNING_AMBER, "Repair the selected packages"));
             
-            btnSearchInstall = CreateButton("🔍 Search & Install", Color.FromArgb(147, 51, 234), "Search for new packages and install them");
+            btnSearchInstall = CreateModernButton("Search & Install", PURPLE_AI, "Search for new packages and install them");
             
             cmbSource = new() { 
-                DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill, Margin = new Padding(3),
-                BackColor = Color.FromArgb(40, 40, 40), ForeColor = Color.White, FlatStyle = FlatStyle.Flat,
-                Font = CreateFont(11F)
+                DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill, Margin = new Padding(4),
+                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY), 
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY), 
+                FlatStyle = FlatStyle.Flat,
+                Font = CreateFont(10F)
             };
             cmbSource.Items.AddRange(new[] { "winget", "msstore", "all" });
             cmbSource.SelectedIndex = 0;
@@ -679,15 +759,28 @@ namespace WingetWizard
             
             splitter = new SplitContainer { 
                 Dock = DockStyle.Fill, Orientation = Orientation.Vertical, 
-                Margin = new Padding(25, 15, 25, 25), BackColor = Color.FromArgb(25, 25, 25),
-                SplitterWidth = 8, Panel1MinSize = 200, Panel2MinSize = 100,
+                Margin = new Padding(32, 20, 32, 32), 
+                BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
+                SplitterWidth = 1, Panel1MinSize = 200, Panel2MinSize = 100,
                 Panel2Collapsed = true
+            };
+            
+            // Style the splitter divider
+            splitter.Paint += (s, e) =>
+            {
+                var borderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
+                using var pen = new Pen(borderColor, 1);
+                e.Graphics.DrawLine(pen, splitter.SplitterDistance, 0, splitter.SplitterDistance, splitter.Height);
             };
             
             lstApps = new() { 
                 Dock = DockStyle.Fill, View = View.Details, FullRowSelect = true, GridLines = false, 
-                CheckBoxes = true, MultiSelect = true, BackColor = GetThemeColor(Color.FromArgb(15, 15, 15), Color.White),
-                ForeColor = GetThemeColor(Color.FromArgb(230, 230, 230), Color.Black), Font = CreateFont(11F), BorderStyle = BorderStyle.None
+                CheckBoxes = true, MultiSelect = true, 
+                BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY), 
+                Font = CreateFont(11F), 
+                BorderStyle = BorderStyle.None,
+                OwnerDraw = false // We'll use standard drawing for now
             };
             
             // Add click handler for opening AI reports from status column
@@ -695,9 +788,12 @@ namespace WingetWizard
             
             txtLogs = new() { 
                 Dock = DockStyle.Fill, Multiline = true, ScrollBars = ScrollBars.Vertical, ReadOnly = true, 
-                Font = new Font("Consolas", 11F), BackColor = GetThemeColor(Color.FromArgb(12, 12, 12), Color.White), 
-                ForeColor = GetThemeColor(Color.FromArgb(34, 197, 94), Color.FromArgb(0, 120, 0)), Text = "=== WingetWizard Logs ===\n",
-                BorderStyle = BorderStyle.None
+                Font = new Font("Consolas", 10F), 
+                BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY), 
+                ForeColor = GetThemeColor(Color.FromArgb(16, 185, 129), Color.FromArgb(5, 150, 105)), 
+                Text = "=== WingetWizard Logs ===\n",
+                BorderStyle = BorderStyle.None,
+                Padding = new Padding(16, 16, 16, 16)
             };
             
             // Create welcome overlay for when no packages are loaded
@@ -714,15 +810,34 @@ namespace WingetWizard
                 lstApps.Columns.Add(column);
             }
             
-            // Modern ListView styling
+            // Modern ListView styling with refined appearance
             lstApps.HeaderStyle = ColumnHeaderStyle.Nonclickable;
-            lstApps.BackColor = GetThemeColor(Color.FromArgb(15, 15, 15), Color.White);
-            lstApps.ForeColor = GetThemeColor(Color.FromArgb(230, 230, 230), Color.Black);
+            lstApps.BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY);
+            lstApps.ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
             lstApps.GridLines = false;
             lstApps.FullRowSelect = true;
             lstApps.View = View.Details;
             lstApps.CheckBoxes = true;
             lstApps.MultiSelect = true;
+            lstApps.HideSelection = false;
+            
+            // Custom draw for alternating row colors (modern apps style)
+            lstApps.OwnerDraw = true;
+            lstApps.DrawItem += (s, e) =>
+            {
+                e.DrawDefault = true;
+            };
+            
+            lstApps.DrawSubItem += (s, e) =>
+            {
+                if (e.ItemIndex % 2 == 0 && e.ItemIndex >= 0)
+                {
+                    var rowColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY);
+                    using var brush = new SolidBrush(rowColor);
+                    e.Graphics.FillRectangle(brush, e.Bounds);
+                }
+                e.DrawDefault = true;
+            };
             
             this.Controls.Add(splitter);
             this.Controls.Add(topPanel);
@@ -1607,8 +1722,8 @@ namespace WingetWizard
             helpMenu.Items.Add("Help Documentation", null, (s, args) => ShowHelp());
             helpMenu.Items.Add("Keyboard Shortcuts", null, (s, args) => ShowKeyboardShortcuts());
             
-            helpMenu.BackColor = GetThemeColor(Color.FromArgb(25, 25, 25), Color.White);
-            helpMenu.ForeColor = GetThemeColor(Color.White, Color.Black);
+            helpMenu.BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY);
+            helpMenu.ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
             helpMenu.Renderer = new ModernMenuRenderer(isDarkMode);
             
             helpMenu.Show(btnHelp, new Point(0, btnHelp.Height));
@@ -1628,8 +1743,8 @@ namespace WingetWizard
             settingsMenu.Items.Add("-");
             settingsMenu.Items.Add("Reset API Keys", null, (s, args) => ResetApiKeys());
             
-            settingsMenu.BackColor = GetThemeColor(Color.FromArgb(25, 25, 25), Color.White);
-            settingsMenu.ForeColor = GetThemeColor(Color.White, Color.Black);
+            settingsMenu.BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY);
+            settingsMenu.ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
             settingsMenu.Renderer = new ModernMenuRenderer(isDarkMode);
             
             settingsMenu.Show(btnSettings, new Point(0, btnSettings.Height));
@@ -1771,8 +1886,8 @@ namespace WingetWizard
         
         private void ApplyThemeToForm(Form form)
         {
-            form.BackColor = GetThemeColor(Color.FromArgb(25, 25, 25), Color.White);
-            form.ForeColor = GetThemeColor(Color.White, Color.Black);
+            form.BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY);
+            form.ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
             
             // Apply dark mode chrome to dialog forms
             if (form.Handle != IntPtr.Zero)
@@ -1814,8 +1929,8 @@ namespace WingetWizard
             }
             else if (control is RichTextBox richTextBox)
             {
-                richTextBox.BackColor = GetThemeColor(Color.FromArgb(25, 25, 25), Color.White);
-                richTextBox.ForeColor = GetThemeColor(Color.White, Color.Black);
+                richTextBox.BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY);
+                richTextBox.ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
             }
         }
 
@@ -1847,6 +1962,76 @@ namespace WingetWizard
             button.MouseLeave += (s, e) =>
             {
                 button.BackColor = backColor;
+            };
+            
+            // Set tooltip if provided
+            if (!string.IsNullOrEmpty(tooltip))
+            {
+                buttonToolTips?.SetToolTip(button, tooltip);
+            }
+            
+            return button;
+        }
+
+        /// <summary>
+        /// Creates a modern, professional button with refined styling inspired by Cursor, Claude, Perplexity, and Vercel.
+        /// Features subtle borders, better spacing, and smooth hover effects.
+        /// </summary>
+        private Button CreateModernButton(string text, Color accentColor, string? tooltip = null)
+        {
+            var isDark = isDarkMode;
+            var button = new Button
+            {
+                Text = text,
+                BackColor = isDark ? BG_DARK_SECONDARY : BG_SECONDARY,
+                ForeColor = isDark ? TEXT_DARK_PRIMARY : TEXT_PRIMARY,
+                FlatStyle = FlatStyle.Flat,
+                FlatAppearance = { 
+                    BorderSize = 1,
+                    BorderColor = isDark ? BORDER_DARK : BORDER_LIGHT
+                },
+                Font = CreateFont(10F, FontStyle.Regular),
+                Dock = DockStyle.Fill,
+                Margin = new Padding(4),
+                Padding = new Padding(12, 8, 12, 8),
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            
+            // Store original colors for hover effects
+            var originalBackColor = button.BackColor;
+            var originalForeColor = button.ForeColor;
+            var originalBorderColor = button.FlatAppearance.BorderColor;
+            
+            // Modern hover effect - subtle color shift with accent border
+            button.MouseEnter += (s, e) =>
+            {
+                button.BackColor = isDark ? BG_DARK_TERTIARY : BG_TERTIARY;
+                button.ForeColor = accentColor;
+                button.FlatAppearance.BorderColor = accentColor;
+            };
+            
+            button.MouseLeave += (s, e) =>
+            {
+                button.BackColor = originalBackColor;
+                button.ForeColor = originalForeColor;
+                button.FlatAppearance.BorderColor = originalBorderColor;
+            };
+            
+            // Pressed state
+            button.MouseDown += (s, e) =>
+            {
+                button.BackColor = accentColor;
+                button.ForeColor = Color.White;
+                button.FlatAppearance.BorderColor = accentColor;
+            };
+            
+            button.MouseUp += (s, e) =>
+            {
+                button.BackColor = isDark ? BG_DARK_TERTIARY : BG_TERTIARY;
+                button.ForeColor = accentColor;
+                button.FlatAppearance.BorderColor = accentColor;
             };
             
             // Set tooltip if provided
