@@ -4,9 +4,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -25,9 +27,17 @@ namespace WingetWizard
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            try
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new MainForm());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Fatal error starting application:\n\n{ex.Message}\n\nStack trace:\n{ex.StackTrace}", 
+                    "WingetWizard Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 
@@ -59,35 +69,39 @@ namespace WingetWizard
         private const string APP_VERSION = "v2.4";
         private const int STATUS_COLUMN_INDEX = 5;
         
-        // Modern color palette inspired by Cursor, Claude, Perplexity, Vercel
-        private static readonly Color PRIMARY_BLUE = Color.FromArgb(59, 130, 246);
+        // Cool minimalist color palette - refined and sophisticated
+        private static readonly Color PRIMARY_BLUE = Color.FromArgb(59, 130, 246);      // Sky blue
         private static readonly Color ACCENT_BLUE = Color.FromArgb(99, 102, 241);      // Indigo accent
-        private static readonly Color SUCCESS_GREEN = Color.FromArgb(16, 185, 129);    // Emerald
-        private static readonly Color WARNING_AMBER = Color.FromArgb(245, 158, 11);     // Amber
-        private static readonly Color ERROR_RED = Color.FromArgb(239, 68, 68);          // Red
+        private static readonly Color SUCCESS_GREEN = Color.FromArgb(16, 185, 129);     // Emerald
+        private static readonly Color WARNING_AMBER = Color.FromArgb(245, 158, 11);    // Amber
+        private static readonly Color ERROR_RED = Color.FromArgb(239, 68, 68);         // Red
         private static readonly Color NEUTRAL_GRAY = Color.FromArgb(107, 114, 128);    // Gray
-        private static readonly Color PURPLE_AI = Color.FromArgb(139, 92, 246);        // Purple
-        private static readonly Color ORANGE_ACCENT = Color.FromArgb(249, 115, 22);     // Orange
+        private static readonly Color PURPLE_AI = Color.FromArgb(139, 92, 246);       // Purple
+        private static readonly Color ORANGE_ACCENT = Color.FromArgb(249, 115, 22);  // Orange
         
-        // Background colors
-        private static readonly Color BG_PRIMARY = Color.FromArgb(255, 255, 255);      // White (light mode)
-        private static readonly Color BG_SECONDARY = Color.FromArgb(249, 250, 251);    // Gray-50
-        private static readonly Color BG_TERTIARY = Color.FromArgb(243, 244, 246);     // Gray-100
-        private static readonly Color BG_DARK_PRIMARY = Color.FromArgb(18, 18, 18);   // Near black (dark mode)
-        private static readonly Color BG_DARK_SECONDARY = Color.FromArgb(24, 24, 24); // Dark gray
-        private static readonly Color BG_DARK_TERTIARY = Color.FromArgb(30, 30, 30);   // Lighter dark gray
+        // Background colors - softer, more refined
+        private static readonly Color BG_PRIMARY = Color.FromArgb(255, 255, 255);      // Pure white (light mode)
+        private static readonly Color BG_SECONDARY = Color.FromArgb(250, 250, 250);    // Off-white
+        private static readonly Color BG_TERTIARY = Color.FromArgb(245, 245, 245);    // Light gray
+        private static readonly Color BG_DARK_PRIMARY = Color.FromArgb(13, 13, 13);    // Deep black (dark mode)
+        private static readonly Color BG_DARK_SECONDARY = Color.FromArgb(20, 20, 20); // Charcoal
+        private static readonly Color BG_DARK_TERTIARY = Color.FromArgb(28, 28, 28);  // Dark gray
         
-        // Text colors
-        private static readonly Color TEXT_PRIMARY = Color.FromArgb(17, 24, 39);       // Gray-900
-        private static readonly Color TEXT_SECONDARY = Color.FromArgb(107, 114, 128);  // Gray-500
-        private static readonly Color TEXT_TERTIARY = Color.FromArgb(156, 163, 175);  // Gray-400
-        private static readonly Color TEXT_DARK_PRIMARY = Color.FromArgb(243, 244, 246); // Gray-100
-        private static readonly Color TEXT_DARK_SECONDARY = Color.FromArgb(156, 163, 175); // Gray-400
-        private static readonly Color TEXT_DARK_TERTIARY = Color.FromArgb(107, 114, 128);   // Gray-500
+        // Text colors - improved contrast and hierarchy
+        private static readonly Color TEXT_PRIMARY = Color.FromArgb(15, 15, 15);      // Near black
+        private static readonly Color TEXT_SECONDARY = Color.FromArgb(100, 100, 100);  // Medium gray
+        private static readonly Color TEXT_TERTIARY = Color.FromArgb(150, 150, 150);  // Light gray
+        private static readonly Color TEXT_DARK_PRIMARY = Color.FromArgb(250, 250, 250); // Off-white
+        private static readonly Color TEXT_DARK_SECONDARY = Color.FromArgb(180, 180, 180); // Light gray
+        private static readonly Color TEXT_DARK_TERTIARY = Color.FromArgb(130, 130, 130);  // Medium gray
         
-        // Border colors
-        private static readonly Color BORDER_LIGHT = Color.FromArgb(229, 231, 235);     // Gray-200
-        private static readonly Color BORDER_DARK = Color.FromArgb(55, 65, 81);         // Gray-700
+        // Border colors - more subtle
+        private static readonly Color BORDER_LIGHT = Color.FromArgb(235, 235, 235);     // Very light gray
+        private static readonly Color BORDER_DARK = Color.FromArgb(40, 40, 40);         // Dark gray
+        
+        // Shadow colors for elevation
+        private static readonly Color SHADOW_LIGHT = Color.FromArgb(0, 0, 0, 8);      // Subtle shadow
+        private static readonly Color SHADOW_DARK = Color.FromArgb(0, 0, 0, 30);       // Dark shadow
         // UI Controls - Modern button layout with Claude-inspired card design
         private Button btnCheck = null!;
         private Button btnUpgrade = null!;
@@ -151,6 +165,12 @@ namespace WingetWizard
         // Operation history
         private readonly string _operationHistoryPath = Path.Combine(Application.StartupPath, "operation_history.json");
         private readonly List<OperationHistoryEntry> _operationHistory = new();
+        
+        // Sidebar navigation
+        private Panel? _sidebarPanel;
+        private bool _sidebarCollapsed = false;
+        private const int SIDEBAR_WIDTH_EXPANDED = 240;
+        private const int SIDEBAR_WIDTH_COLLAPSED = 60;
 
         /// <summary>
         /// Creates modern typography with intelligent font fallback system.
@@ -480,6 +500,278 @@ namespace WingetWizard
             return !this.IsDisposed && this.Created;
         }
 
+        // Helper method to create rounded rectangle path for cool minimalist buttons
+        private System.Drawing.Drawing2D.GraphicsPath CreateRoundedRectanglePath(Rectangle rect, int radius)
+        {
+            var path = new System.Drawing.Drawing2D.GraphicsPath();
+            var diameter = radius * 2;
+            
+            path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90);
+            path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90);
+            path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90);
+            path.CloseFigure();
+            
+            return path;
+        }
+
+        /// <summary>
+        /// Creates the modern sidebar navigation panel
+        /// </summary>
+        private Panel CreateSidebar()
+        {
+            var sidebar = new Panel
+            {
+                Dock = DockStyle.Left,
+                Width = SIDEBAR_WIDTH_EXPANDED,
+                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
+                Padding = new Padding(0)
+            };
+            
+            // Add right border
+            sidebar.Paint += (s, e) =>
+            {
+                var borderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
+                using var pen = new Pen(borderColor, 1);
+                e.Graphics.DrawLine(pen, sidebar.Width - 1, 0, sidebar.Width - 1, sidebar.Height);
+            };
+            
+            // Scrollable container for sidebar content
+            var scrollPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                BackColor = Color.Transparent
+            };
+            
+            // Sidebar header with collapse button
+            var sidebarHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 50,
+                BackColor = GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY),
+                Padding = new Padding(12, 12, 12, 12)
+            };
+            
+            var collapseButton = new Button
+            {
+                Text = "☰",
+                Font = CreateFont(16F),
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
+                BackColor = GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY), // Use theme color instead of transparent
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(36, 36),
+                Location = new Point(12, 7),
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false
+            };
+            collapseButton.FlatAppearance.BorderSize = 0;
+            collapseButton.FlatAppearance.BorderColor = collapseButton.BackColor;
+            var originalCollapseBackColor = collapseButton.BackColor;
+            collapseButton.Click += (s, e) => ToggleSidebar();
+            collapseButton.MouseEnter += (s, e) => collapseButton.BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY);
+            collapseButton.MouseLeave += (s, e) => collapseButton.BackColor = originalCollapseBackColor;
+            
+            sidebarHeader.Controls.Add(collapseButton);
+            
+            // Content panel for action groups
+            var contentPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(0),
+                Margin = new Padding(0),
+                BackColor = Color.Transparent,
+                AutoScroll = false
+            };
+            
+            // Create action groups with buttons
+            var primaryGroup = CreateActionGroup("Primary", new[] { btnCheck, btnListAll, btnSearchInstall });
+            var packageGroup = CreateActionGroup("Package Management", new[] { btnUpgrade, btnUpgradeAll, btnInstall, btnUninstall, btnRepair });
+            var aiGroup = CreateActionGroup("AI Features", new[] { btnResearch });
+            var toolsGroup = CreateActionGroup("Tools", new[] { btnExport, btnLogs });
+            var settingsGroup = CreateActionGroup("Settings", new[] { btnSettings, btnHelp });
+            
+            // Source selector panel
+            var sourcePanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 60,
+                Padding = new Padding(12, 12, 12, 8),
+                Margin = new Padding(0),
+                BackColor = Color.Transparent
+            };
+            
+            var sourceLabel = new Label
+            {
+                Text = "Source:",
+                Font = CreateFont(9F, FontStyle.Regular),
+                ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY),
+                Location = new Point(12, 0),
+                AutoSize = true,
+                Height = 20,
+                BackColor = Color.Transparent
+            };
+            ApplyThemeToControl(sourceLabel);
+            
+            cmbSource.Dock = DockStyle.Bottom;
+            cmbSource.Height = 32;
+            cmbSource.Margin = new Padding(0);
+            
+            sourcePanel.Controls.Add(sourceLabel);
+            sourcePanel.Controls.Add(cmbSource);
+            
+            // Add groups to content panel (bottom to top for proper docking with DockStyle.Top)
+            // Order matters: last added appears at top, first added at bottom
+            contentPanel.Controls.Add(sourcePanel);
+            contentPanel.Controls.Add(primaryGroup);
+            contentPanel.Controls.Add(packageGroup);
+            contentPanel.Controls.Add(aiGroup);
+            contentPanel.Controls.Add(toolsGroup);
+            contentPanel.Controls.Add(settingsGroup);
+            
+            scrollPanel.Controls.Add(contentPanel);
+            sidebar.Controls.Add(scrollPanel);
+            sidebar.Controls.Add(sidebarHeader);
+            
+            return sidebar;
+        }
+
+        /// <summary>
+        /// Creates an action group with header and buttons
+        /// </summary>
+        private Panel CreateActionGroup(string title, Button[] buttons)
+        {
+            if (buttons == null || buttons.Length == 0)
+            {
+                buttons = new Button[0];
+            }
+            
+            // Calculate total height: header (28px) + buttons (36px each + 8px margin = 44px each) + bottom padding (16px)
+            var headerHeight = 28;
+            var buttonHeight = 36;
+            var buttonMargin = 8; // 4px top + 4px bottom
+            var totalButtonHeight = buttons.Length * (buttonHeight + buttonMargin);
+            var bottomPadding = 16;
+            var totalHeight = headerHeight + totalButtonHeight + bottomPadding;
+            
+            var group = new Panel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = false,
+                Height = totalHeight,
+                Padding = new Padding(0),
+                Margin = new Padding(0),
+                BackColor = Color.Transparent
+            };
+            
+            // Group header
+            var header = new Label
+            {
+                Text = title.ToUpper(),
+                Font = CreateFont(9F, FontStyle.Bold),
+                ForeColor = GetThemeColor(TEXT_DARK_TERTIARY, TEXT_TERTIARY),
+                Location = new Point(12, 8),
+                AutoSize = true,
+                Height = 20,
+                BackColor = Color.Transparent
+            };
+            ApplyThemeToControl(header);
+            
+            // Buttons container - positioned below header using TableLayoutPanel for better control
+            var buttonsPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Location = new Point(0, headerHeight),
+                Height = totalButtonHeight,
+                BackColor = Color.Transparent,
+                AutoSize = false,
+                Padding = new Padding(0)
+            };
+            
+            // Add buttons in reverse order (since they dock to Top, last one added appears at top)
+            for (int i = buttons.Length - 1; i >= 0; i--)
+            {
+                buttons[i].Dock = DockStyle.Top;
+                buttons[i].Height = buttonHeight;
+                buttons[i].Margin = new Padding(8, 4, 8, 4);
+                buttons[i].Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+                buttonsPanel.Controls.Add(buttons[i]);
+            }
+            
+            // Create a container panel for header and buttons
+            var headerPanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = headerHeight,
+                BackColor = Color.Transparent
+            };
+            headerPanel.Controls.Add(header);
+            
+            group.Controls.Add(buttonsPanel);
+            group.Controls.Add(headerPanel);
+            
+            return group;
+        }
+
+        /// <summary>
+        /// Creates a sidebar-styled button with icon and text
+        /// </summary>
+        private Button CreateSidebarButton(string text, string icon, Color accentColor, string? tooltip = null)
+        {
+            var isDark = isDarkMode;
+            var button = new Button
+            {
+                Text = _sidebarCollapsed ? icon : $"{icon} {text}",
+                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
+                FlatStyle = FlatStyle.Flat,
+                Font = CreateFont(10.5F, FontStyle.Regular),
+                TextAlign = _sidebarCollapsed ? ContentAlignment.MiddleCenter : ContentAlignment.MiddleLeft,
+                Padding = _sidebarCollapsed ? new Padding(0) : new Padding(12, 0, 12, 0),
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false
+            };
+            
+            button.FlatAppearance.BorderSize = 0;
+            button.FlatAppearance.BorderColor = button.BackColor;
+            
+            var originalBackColor = button.BackColor;
+            var originalForeColor = button.ForeColor;
+            
+            // Hover effect
+            button.MouseEnter += (s, e) =>
+            {
+                button.BackColor = GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY);
+                button.ForeColor = accentColor;
+            };
+            
+            button.MouseLeave += (s, e) =>
+            {
+                button.BackColor = originalBackColor;
+                button.ForeColor = originalForeColor;
+            };
+            
+            // Pressed state
+            button.MouseDown += (s, e) =>
+            {
+                button.BackColor = accentColor;
+                button.ForeColor = Color.White;
+            };
+            
+            button.MouseUp += (s, e) =>
+            {
+                button.BackColor = GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY);
+                button.ForeColor = accentColor;
+            };
+            
+            if (!string.IsNullOrEmpty(tooltip))
+            {
+                buttonToolTips?.SetToolTip(button, tooltip);
+            }
+            
+            return button;
+        }
+
         /// <summary>
         /// Initializes the main WingetWizard form with Claude AI-inspired interface.
         /// Sets up comprehensive package management UI with modern aesthetics and enhanced functionality.
@@ -517,9 +809,24 @@ namespace WingetWizard
             
             System.Diagnostics.Debug.WriteLine($"AI service initialized with primary provider: {primaryProvider}");
             
-            // Load operation history and progress state
-            LoadOperationHistory();
-            LoadProgressState();
+            // Load operation history and progress state (with error handling)
+            try
+            {
+                LoadOperationHistory();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load operation history: {ex.Message}");
+            }
+            
+            try
+            {
+                LoadProgressState();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load progress state: {ex.Message}");
+            }
             
             InitializeComponent();
             
@@ -563,43 +870,44 @@ namespace WingetWizard
             };
             ApplySystemTheme();
 
-            // Modern header with refined design
+            // Modern header with cool minimalist design
             var headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 64,
+                Height = 72,
                 BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
-                Padding = new Padding(0, 0, 0, 1) // Bottom border effect
+                Padding = new Padding(0, 0, 0, 0)
             };
             
-            // Add subtle bottom border
+            // Add subtle bottom border with gradient effect
             headerPanel.Paint += (s, e) =>
             {
                 var borderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
                 using var pen = new Pen(borderColor, 1);
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 e.Graphics.DrawLine(pen, 0, headerPanel.Height - 1, headerPanel.Width, headerPanel.Height - 1);
             };
 
             var headerLabel = new Label
             {
                 Text = "WingetWizard",
-                Font = CreateFont(20F, FontStyle.Bold),
+                Font = CreateFont(24F, FontStyle.Bold),
                 ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Dock = DockStyle.Fill,
-                Padding = new Padding(32, 0, 0, 0)
+                Padding = new Padding(40, 0, 0, 0)
             };
 
             var subtitleLabel = new Label
             {
                 Text = "AI-Enhanced Package Manager",
-                Font = CreateFont(11F, FontStyle.Regular),
+                Font = CreateFont(11.5F, FontStyle.Regular),
                 ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY),
                 TextAlign = ContentAlignment.MiddleRight,
                 Dock = DockStyle.Right,
-                Padding = new Padding(0, 0, 32, 0),
+                Padding = new Padding(0, 0, 40, 0),
                 AutoSize = false,
-                Width = 280
+                Width = 300
             };
 
             headerPanel.Controls.Add(headerLabel);
@@ -651,10 +959,6 @@ namespace WingetWizard
                 ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
                 BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
                 FlatStyle = FlatStyle.Flat,
-                FlatAppearance = {
-                    BorderSize = 1,
-                    BorderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT)
-                },
                 Dock = DockStyle.Right,
                 Width = 90,
                 Height = 28,
@@ -662,8 +966,17 @@ namespace WingetWizard
                 Padding = new Padding(12, 6, 12, 6),
                 Visible = false,
                 Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false
             };
+            
+            // Set FlatAppearance after button is created
+            _cancelButton.FlatAppearance.BorderSize = 1;
+            _cancelButton.FlatAppearance.BorderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
+            
+            var originalCancelBackColor = _cancelButton.BackColor;
+            var originalCancelForeColor = _cancelButton.ForeColor;
+            var originalCancelBorderColor = _cancelButton.FlatAppearance.BorderColor;
             
             // Hover effect for cancel button
             _cancelButton.MouseEnter += (s, e) =>
@@ -675,9 +988,9 @@ namespace WingetWizard
             
             _cancelButton.MouseLeave += (s, e) =>
             {
-                _cancelButton.BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY);
-                _cancelButton.ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
-                _cancelButton.FlatAppearance.BorderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
+                _cancelButton.BackColor = originalCancelBackColor;
+                _cancelButton.ForeColor = originalCancelForeColor;
+                _cancelButton.FlatAppearance.BorderColor = originalCancelBorderColor;
             };
             _cancelButton.Click += (s, e) =>
             {
@@ -701,75 +1014,55 @@ namespace WingetWizard
                 BackColor = Color.Transparent
             };
 
-            var topPanel = new TableLayoutPanel { 
-                Dock = DockStyle.Top, Height = 140, ColumnCount = 9, RowCount = 2, 
-                Padding = new Padding(32, 20, 32, 20), 
-                BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY)
-            };
-            float[] colWidths = { 11F, 11F, 11F, 11F, 11F, 12F, 11F, 11F, 11F };
-            float[] rowHeights = { 55F, 55F };
-            for (int i = 0; i < 9; i++) topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, colWidths[i]));
-            for (int i = 0; i < 2; i++) topPanel.RowStyles.Add(new RowStyle(SizeType.Percent, rowHeights[i]));
-            
-            // Modern refined color palette - professional and subtle
+            // Create buttons for sidebar first
             (btnCheck, btnUpgrade, btnUpgradeAll, btnListAll, btnResearch, btnLogs, btnExport, btnHelp, btnSettings) = 
-                (CreateModernButton("Check Updates", PRIMARY_BLUE, "Check for available package updates"),
-                 CreateModernButton("Upgrade Selected", SUCCESS_GREEN, "Upgrade only the selected packages"),
-                 CreateModernButton("Upgrade All", SUCCESS_GREEN, "Upgrade all available packages at once"),
-                 CreateModernButton("List All Apps", NEUTRAL_GRAY, "Show all installed applications"),
-                 CreateModernButton("AI Research", PURPLE_AI, "Get AI-powered package recommendations"),
-                 CreateModernButton("Show Logs", NEUTRAL_GRAY, "Toggle log output visibility"), 
-                 CreateModernButton("Export", ORANGE_ACCENT, "Export package list to file"),
-                 CreateModernButton("Help", ACCENT_BLUE, "Show help menu and about information"), 
-                 CreateModernButton("Settings", NEUTRAL_GRAY, "Configure application settings"));
+                (CreateSidebarButton("Check Updates", "🔄", PRIMARY_BLUE, "Check for available package updates"),
+                 CreateSidebarButton("Upgrade Selected", "⬆️", SUCCESS_GREEN, "Upgrade only the selected packages"),
+                 CreateSidebarButton("Upgrade All", "🚀", SUCCESS_GREEN, "Upgrade all available packages at once"),
+                 CreateSidebarButton("List All Apps", "📋", NEUTRAL_GRAY, "Show all installed applications"),
+                 CreateSidebarButton("AI Research", "🤖", PURPLE_AI, "Get AI-powered package recommendations"),
+                 CreateSidebarButton("Show Logs", "📄", NEUTRAL_GRAY, "Toggle log output visibility"), 
+                 CreateSidebarButton("Export", "💾", ORANGE_ACCENT, "Export package list to file"),
+                 CreateSidebarButton("Help", "❓", ACCENT_BLUE, "Show help menu and about information"), 
+                 CreateSidebarButton("Settings", "⚙️", NEUTRAL_GRAY, "Configure application settings"));
             
             (btnInstall, btnUninstall, btnRepair) = (
-                CreateModernButton("Install Selected", SUCCESS_GREEN, "Install the selected packages"),
-                CreateModernButton("Uninstall Selected", ERROR_RED, "Uninstall the selected packages"),
-                CreateModernButton("Repair Selected", WARNING_AMBER, "Repair the selected packages"));
+                CreateSidebarButton("Install Selected", "📦", SUCCESS_GREEN, "Install the selected packages"),
+                CreateSidebarButton("Uninstall Selected", "🗑️", ERROR_RED, "Uninstall the selected packages"),
+                CreateSidebarButton("Repair Selected", "🔧", WARNING_AMBER, "Repair the selected packages"));
             
-            btnSearchInstall = CreateModernButton("Search & Install", PURPLE_AI, "Search for new packages and install them");
+            btnSearchInstall = CreateSidebarButton("Search & Install", "🔍", PURPLE_AI, "Search for new packages and install them");
             
             cmbSource = new() { 
-                DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill, Margin = new Padding(4),
-                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY), 
+                DropDownStyle = ComboBoxStyle.DropDownList, 
+                Margin = new Padding(12, 4, 12, 4),
+                BackColor = GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY), 
                 ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY), 
                 FlatStyle = FlatStyle.Flat,
-                Font = CreateFont(10F)
+                Font = CreateFont(10F),
+                Height = 32
             };
             cmbSource.Items.AddRange(new[] { "winget", "msstore", "all" });
             cmbSource.SelectedIndex = 0;
             buttonToolTips.SetToolTip(cmbSource, "Select package source: winget, Microsoft Store, or all sources");
             
-            topPanel.Controls.Add(btnCheck, 0, 0);
-            topPanel.Controls.Add(btnUpgrade, 1, 0);
-            topPanel.Controls.Add(btnUpgradeAll, 2, 0);
-            topPanel.Controls.Add(btnListAll, 3, 0);
-            topPanel.Controls.Add(btnResearch, 4, 0);
-            topPanel.Controls.Add(btnLogs, 5, 0);
-            topPanel.Controls.Add(btnExport, 6, 0);
-            topPanel.Controls.Add(btnHelp, 7, 0);
-            topPanel.Controls.Add(btnSettings, 8, 0);
-            
-            topPanel.Controls.Add(btnInstall, 0, 1);
-            topPanel.Controls.Add(btnUninstall, 1, 1);
-            topPanel.Controls.Add(btnRepair, 2, 1);
-            topPanel.Controls.Add(btnSearchInstall, 3, 1);
-            topPanel.Controls.Add(cmbSource, 4, 1);
+            // Create modern sidebar navigation with buttons
+            _sidebarPanel = CreateSidebar();
             
             splitter = new SplitContainer { 
                 Dock = DockStyle.Fill, Orientation = Orientation.Vertical, 
-                Margin = new Padding(32, 20, 32, 32), 
+                Margin = new Padding(24, 24, 24, 24), 
                 BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
                 SplitterWidth = 1, Panel1MinSize = 200, Panel2MinSize = 100,
                 Panel2Collapsed = true
             };
             
-            // Style the splitter divider
+            // Style the splitter divider with subtle styling
             splitter.Paint += (s, e) =>
             {
                 var borderColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
                 using var pen = new Pen(borderColor, 1);
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 e.Graphics.DrawLine(pen, splitter.SplitterDistance, 0, splitter.SplitterDistance, splitter.Height);
             };
             
@@ -780,7 +1073,8 @@ namespace WingetWizard
                 ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY), 
                 Font = CreateFont(11F), 
                 BorderStyle = BorderStyle.None,
-                OwnerDraw = false // We'll use standard drawing for now
+                OwnerDraw = false, // Use standard drawing for stability
+                Padding = new Padding(0, 8, 0, 8)
             };
             
             // Add click handler for opening AI reports from status column
@@ -839,11 +1133,21 @@ namespace WingetWizard
                 e.DrawDefault = true;
             };
             
+            // Add controls in proper z-order (back to front)
             this.Controls.Add(splitter);
-            this.Controls.Add(topPanel);
+            this.Controls.Add(_sidebarPanel);
             this.Controls.Add(progressPanel);
             this.Controls.Add(headerPanel);
             this.Controls.Add(versionLabel);
+            
+            // Load and apply sidebar state after initialization
+            var sidebarCollapsed = _settingsService.GetSetting<bool>("SidebarCollapsed", false);
+            if (sidebarCollapsed && _sidebarPanel != null)
+            {
+                _sidebarCollapsed = true;
+                _sidebarPanel.Width = SIDEBAR_WIDTH_COLLAPSED;
+                UpdateSidebarButtons();
+            }
             
             var handlers = new (Button btn, EventHandler handler)[] {
                 (btnCheck, BtnCheck_Click), (btnUpgrade, BtnUpgrade_Click), (btnUpgradeAll, BtnUpgradeAll_Click),
@@ -888,6 +1192,7 @@ namespace WingetWizard
                 _settingsService.SetSetting("isAdvancedMode", isAdvancedMode);
                 _settingsService.SetSetting("selectedAiModel", selectedAiModel);
                 _settingsService.SetSetting("verboseLogging", verboseLogging);
+                _settingsService.SetSetting("SidebarCollapsed", _sidebarCollapsed.ToString());
                 _settingsService.SaveSettings();
                 LogMessage($"Settings saved with {_settingsService.GetAllSettings().Count} keys");
             }
@@ -896,6 +1201,72 @@ namespace WingetWizard
                 LogMessage($"Settings save error: {ex.Message}");
                 MessageBox.Show($"Failed to save settings: {ex.Message}", "Settings Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+        }
+        
+        /// <summary>
+        /// Updates all sidebar buttons based on collapse state
+        /// </summary>
+        private void UpdateSidebarButtons()
+        {
+            UpdateButtonText(btnCheck, "🔄", "Check Updates");
+            UpdateButtonText(btnListAll, "📋", "List All Apps");
+            UpdateButtonText(btnSearchInstall, "🔍", "Search & Install");
+            UpdateButtonText(btnUpgrade, "⬆️", "Upgrade Selected");
+            UpdateButtonText(btnUpgradeAll, "🚀", "Upgrade All");
+            UpdateButtonText(btnInstall, "📦", "Install Selected");
+            UpdateButtonText(btnUninstall, "🗑️", "Uninstall Selected");
+            UpdateButtonText(btnRepair, "🔧", "Repair Selected");
+            UpdateButtonText(btnResearch, "🤖", "AI Research");
+            UpdateButtonText(btnExport, "💾", "Export");
+            UpdateButtonText(btnLogs, "📄", "Show Logs");
+            UpdateButtonText(btnSettings, "⚙️", "Settings");
+            UpdateButtonText(btnHelp, "❓", "Help");
+        }
+        
+        /// <summary>
+        /// Updates a button's text based on sidebar state
+        /// </summary>
+        private void UpdateButtonText(Button button, string icon, string text)
+        {
+            if (button == null) return;
+            button.Text = _sidebarCollapsed ? icon : $"{icon} {text}";
+            button.TextAlign = _sidebarCollapsed ? ContentAlignment.MiddleCenter : ContentAlignment.MiddleLeft;
+            button.Padding = _sidebarCollapsed ? new Padding(0) : new Padding(12, 0, 12, 0);
+        }
+        
+        /// <summary>
+        /// Toggles sidebar collapse/expand state
+        /// </summary>
+        private void ToggleSidebar()
+        {
+            if (_sidebarPanel == null) return;
+            
+            _sidebarCollapsed = !_sidebarCollapsed;
+            
+            // Animate width change
+            var targetWidth = _sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
+            var timer = new System.Windows.Forms.Timer { Interval = 10 };
+            var startWidth = _sidebarPanel.Width;
+            var step = (targetWidth - startWidth) / 20.0f;
+            var current = 0;
+            
+            timer.Tick += (s, e) =>
+            {
+                current++;
+                if (current >= 20)
+                {
+                    _sidebarPanel.Width = targetWidth;
+                    timer.Stop();
+                    timer.Dispose();
+                    UpdateSidebarButtons();
+                    SaveSettings();
+                    return;
+                }
+                
+                _sidebarPanel.Width = (int)(startWidth + step * current);
+            };
+            
+            timer.Start();
         }
 
         // Button click handlers using service classes
@@ -1782,15 +2153,12 @@ namespace WingetWizard
                         {
                             try
                             {
-                                Process.Start(new ProcessStartInfo
-                                {
-                                    FileName = reportPath,
-                                    UseShellExecute = true
-                                });
+                                ShowMarkdownReport(reportPath, packageName);
                             }
                             catch (Exception ex)
                             {
                                 LogMessage($"Failed to open report: {ex.Message}");
+                                ShowNotification($"Failed to open report: {ex.Message}", NotificationType.Error, 5000);
                             }
                         }
                     }
@@ -1974,8 +2342,8 @@ namespace WingetWizard
         }
 
         /// <summary>
-        /// Creates a modern, professional button with refined styling inspired by Cursor, Claude, Perplexity, and Vercel.
-        /// Features subtle borders, better spacing, and smooth hover effects.
+        /// Creates a cool minimalist button with refined styling - rounded corners, subtle shadows, smooth transitions.
+        /// Inspired by modern design systems like Vercel, Linear, and Raycast.
         /// </summary>
         private Button CreateModernButton(string text, Color accentColor, string? tooltip = null)
         {
@@ -1986,52 +2354,98 @@ namespace WingetWizard
                 BackColor = isDark ? BG_DARK_SECONDARY : BG_SECONDARY,
                 ForeColor = isDark ? TEXT_DARK_PRIMARY : TEXT_PRIMARY,
                 FlatStyle = FlatStyle.Flat,
-                FlatAppearance = { 
-                    BorderSize = 1,
-                    BorderColor = isDark ? BORDER_DARK : BORDER_LIGHT
-                },
-                Font = CreateFont(10F, FontStyle.Regular),
+                Font = CreateFont(10.5F, FontStyle.Regular),
                 Dock = DockStyle.Fill,
-                Margin = new Padding(4),
-                Padding = new Padding(12, 8, 12, 8),
+                Margin = new Padding(6, 6, 6, 6),
+                Padding = new Padding(16, 10, 16, 10),
                 Cursor = Cursors.Hand,
                 UseVisualStyleBackColor = false,
                 TextAlign = ContentAlignment.MiddleCenter
             };
             
+            // Set FlatAppearance after button creation (required for proper initialization)
+            // Note: Can't use Color.Transparent for BorderColor, so set BorderSize to 0 instead
+            button.FlatAppearance.BorderSize = 0;
+            button.FlatAppearance.BorderColor = button.BackColor; // Use same as background to hide border
+            
+            // Custom paint for rounded corners and subtle shadow
+            button.Paint += (s, e) =>
+            {
+                var btn = s as Button;
+                if (btn == null) return;
+                
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                
+                // Draw subtle shadow on hover (safer check)
+                try
+                {
+                    var mousePos = btn.PointToClient(Control.MousePosition);
+                    if (btn.ClientRectangle.Contains(mousePos))
+                    {
+                        using var shadowBrush = new SolidBrush(Color.FromArgb(20, 0, 0, 0));
+                        var shadowRect = new Rectangle(btn.ClientRectangle.X + 2, btn.ClientRectangle.Y + 2, 
+                                                       btn.ClientRectangle.Width, btn.ClientRectangle.Height);
+                        using var path = new System.Drawing.Drawing2D.GraphicsPath();
+                        path.AddEllipse(shadowRect);
+                        e.Graphics.FillPath(shadowBrush, path);
+                    }
+                }
+                catch
+                {
+                    // Ignore mouse position errors during initialization
+                }
+                
+                // Draw rounded rectangle background
+                using var bgBrush = new SolidBrush(btn.BackColor);
+                var rect = new Rectangle(0, 0, btn.Width, btn.Height);
+                using var bgPath = CreateRoundedRectanglePath(rect, 8);
+                e.Graphics.FillPath(bgBrush, bgPath);
+                
+                // Draw text
+                var textRect = new Rectangle(btn.Padding.Left, btn.Padding.Top, 
+                                            btn.Width - btn.Padding.Horizontal, 
+                                            btn.Height - btn.Padding.Vertical);
+                var sf = new StringFormat
+                {
+                    Alignment = StringAlignment.Center,
+                    LineAlignment = StringAlignment.Center
+                };
+                e.Graphics.DrawString(btn.Text, btn.Font, new SolidBrush(btn.ForeColor), textRect, sf);
+            };
+            
             // Store original colors for hover effects
             var originalBackColor = button.BackColor;
             var originalForeColor = button.ForeColor;
-            var originalBorderColor = button.FlatAppearance.BorderColor;
             
-            // Modern hover effect - subtle color shift with accent border
+            // Cool minimalist hover effect - smooth color transition
             button.MouseEnter += (s, e) =>
             {
-                button.BackColor = isDark ? BG_DARK_TERTIARY : BG_TERTIARY;
+                button.BackColor = isDark ? Color.FromArgb(32, 32, 32) : Color.FromArgb(248, 248, 248);
                 button.ForeColor = accentColor;
-                button.FlatAppearance.BorderColor = accentColor;
+                button.Invalidate(); // Trigger repaint for shadow
             };
             
             button.MouseLeave += (s, e) =>
             {
                 button.BackColor = originalBackColor;
                 button.ForeColor = originalForeColor;
-                button.FlatAppearance.BorderColor = originalBorderColor;
+                button.Invalidate();
             };
             
-            // Pressed state
+            // Pressed state - subtle press effect
             button.MouseDown += (s, e) =>
             {
                 button.BackColor = accentColor;
                 button.ForeColor = Color.White;
-                button.FlatAppearance.BorderColor = accentColor;
+                button.Invalidate();
             };
             
             button.MouseUp += (s, e) =>
             {
-                button.BackColor = isDark ? BG_DARK_TERTIARY : BG_TERTIARY;
+                button.BackColor = isDark ? Color.FromArgb(32, 32, 32) : Color.FromArgb(248, 248, 248);
                 button.ForeColor = accentColor;
-                button.FlatAppearance.BorderColor = accentColor;
+                button.Invalidate();
             };
             
             // Set tooltip if provided
@@ -2425,6 +2839,586 @@ Tips:
             
             helpForm.Controls.Add(helpText);
             helpForm.ShowDialog(this);
+        }
+
+        /// <summary>
+        /// Displays a markdown report in an in-app viewer with cool minimalist styling
+        /// </summary>
+        private void ShowMarkdownReport(string reportPath, string packageName)
+        {
+            if (!File.Exists(reportPath))
+            {
+                ShowNotification("Report file not found", NotificationType.Warning, 3000);
+                return;
+            }
+
+            var reportForm = new Form
+            {
+                Text = $"AI Report: {packageName}",
+                Size = new Size(1000, 700),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.Sizable,
+                MinimumSize = new Size(800, 500)
+            };
+            ApplyThemeToForm(reportForm);
+
+            var mainPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 1,
+                Padding = new Padding(0)
+            };
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            // Header panel
+            var headerPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
+                Padding = new Padding(20, 12, 20, 12)
+            };
+
+            var titleLabel = new Label
+            {
+                Text = $"📄 {packageName} - AI Research Report",
+                Font = CreateFont(14F, FontStyle.Bold),
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
+                AutoSize = true,
+                Location = new Point(20, 12)
+            };
+            ApplyThemeToControl(titleLabel);
+
+            var closeButton = new Button
+            {
+                Text = "✕",
+                Font = CreateFont(12F, FontStyle.Bold),
+                ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY),
+                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(30, 30),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Location = new Point(reportForm.Width - 50, 10),
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false
+            };
+            closeButton.FlatAppearance.BorderSize = 0;
+            closeButton.FlatAppearance.BorderColor = closeButton.BackColor;
+            closeButton.Click += (s, e) => reportForm.Close();
+            closeButton.MouseEnter += (s, e) => closeButton.ForeColor = ERROR_RED;
+            closeButton.MouseLeave += (s, e) => closeButton.ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY);
+
+            headerPanel.Controls.Add(titleLabel);
+            headerPanel.Controls.Add(closeButton);
+
+            // Content panel with WebBrowser for markdown rendering
+            var contentPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
+                Padding = new Padding(30, 20, 30, 20)
+            };
+
+            // Read and convert markdown to HTML
+            // Use RichTextBox as primary viewer (WebBrowser not available in .NET 6.0)
+            try
+            {
+                var markdownContent = File.ReadAllText(reportPath, Encoding.UTF8);
+                
+                // Use RichTextBox with formatted markdown display
+                var markdownViewer = new RichTextBox
+                {
+                    Dock = DockStyle.Fill,
+                    ReadOnly = true,
+                    BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
+                    ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
+                    Font = CreateFont(11F),
+                    BorderStyle = BorderStyle.None,
+                    WordWrap = true
+                };
+                ApplyThemeToControl(markdownViewer);
+                
+                // Format markdown for better readability
+                FormatMarkdownForRichTextBox(markdownViewer, markdownContent);
+                
+                contentPanel.Controls.Add(markdownViewer);
+            }
+            catch (Exception ex)
+            {
+                // Fallback to plain text if formatting fails
+                var fallbackText = new RichTextBox
+                {
+                    Dock = DockStyle.Fill,
+                    ReadOnly = true,
+                    BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
+                    ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
+                    Font = CreateFont(11F),
+                    BorderStyle = BorderStyle.None,
+                    Text = File.ReadAllText(reportPath, Encoding.UTF8)
+                };
+                ApplyThemeToControl(fallbackText);
+                contentPanel.Controls.Add(fallbackText);
+                
+                LogMessage($"Using fallback text viewer for report: {ex.Message}");
+            }
+
+            mainPanel.Controls.Add(headerPanel, 0, 0);
+            mainPanel.Controls.Add(contentPanel, 0, 1);
+
+            reportForm.Controls.Add(mainPanel);
+            reportForm.ShowDialog(this);
+        }
+
+        /// <summary>
+        /// Formats markdown content for display in RichTextBox with basic styling
+        /// </summary>
+        private void FormatMarkdownForRichTextBox(RichTextBox rtb, string markdown)
+        {
+            rtb.Clear();
+            var lines = markdown.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                
+                if (trimmed.StartsWith("# "))
+                {
+                    rtb.SelectionFont = CreateFont(18F, FontStyle.Bold);
+                    rtb.SelectionColor = PRIMARY_BLUE;
+                    rtb.AppendText(trimmed.Substring(2) + "\n");
+                }
+                else if (trimmed.StartsWith("## "))
+                {
+                    rtb.SelectionFont = CreateFont(16F, FontStyle.Bold);
+                    rtb.SelectionColor = ACCENT_BLUE;
+                    rtb.AppendText(trimmed.Substring(3) + "\n");
+                }
+                else if (trimmed.StartsWith("### "))
+                {
+                    rtb.SelectionFont = CreateFont(14F, FontStyle.Bold);
+                    rtb.SelectionColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
+                    rtb.AppendText(trimmed.Substring(4) + "\n");
+                }
+                else if (trimmed == "---" || trimmed == "***")
+                {
+                    rtb.SelectionFont = CreateFont(11F);
+                    rtb.SelectionColor = GetThemeColor(BORDER_DARK, BORDER_LIGHT);
+                    rtb.AppendText(new string('─', 80) + "\n");
+                }
+                else if (trimmed.StartsWith("- ") || trimmed.StartsWith("* "))
+                {
+                    rtb.SelectionFont = CreateFont(11F);
+                    rtb.SelectionColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
+                    rtb.AppendText("  • " + trimmed.Substring(2) + "\n");
+                }
+                else if (Regex.IsMatch(trimmed, @"^\d+\.\s"))
+                {
+                    rtb.SelectionFont = CreateFont(11F);
+                    rtb.SelectionColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
+                    rtb.AppendText("  " + trimmed + "\n");
+                }
+                else if (trimmed.StartsWith("```"))
+                {
+                    rtb.SelectionFont = new Font("Consolas", 10F);
+                    rtb.SelectionColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY);
+                }
+                else if (!string.IsNullOrEmpty(trimmed))
+                {
+                    // Process inline formatting
+                    rtb.SelectionFont = CreateFont(11F);
+                    rtb.SelectionColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
+                    
+                    // Handle bold **text**
+                    var processedLine = ProcessMarkdownLine(rtb, line);
+                    rtb.AppendText(processedLine + "\n");
+                }
+                else
+                {
+                    rtb.AppendText("\n");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Processes a markdown line and applies formatting to RichTextBox
+        /// </summary>
+        private string ProcessMarkdownLine(RichTextBox rtb, string line)
+        {
+            // Simple processing - remove markdown syntax for now
+            var processed = line;
+            processed = Regex.Replace(processed, @"\*\*(.+?)\*\*", "$1"); // Remove bold
+            processed = Regex.Replace(processed, @"\*(.+?)\*", "$1"); // Remove italic
+            processed = Regex.Replace(processed, @"`(.+?)`", "$1"); // Remove code
+            return processed;
+        }
+
+        /// <summary>
+        /// Converts markdown to HTML (kept for potential future use)
+        /// </summary>
+        private string ConvertMarkdownToHtml(string markdown)
+        {
+            var html = new StringBuilder();
+            html.AppendLine("<!DOCTYPE html>");
+            html.AppendLine("<html>");
+            html.AppendLine("<head>");
+            html.AppendLine("<meta charset='UTF-8'>");
+            html.AppendLine("<style>");
+            html.AppendLine("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; padding: 20px; max-width: 1200px; margin: 0 auto; }");
+            html.AppendLine("h1 { color: #3b82f6; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }");
+            html.AppendLine("h2 { color: #60a5fa; margin-top: 30px; }");
+            html.AppendLine("h3 { color: #93c5fd; margin-top: 20px; }");
+            html.AppendLine("code { background-color: rgba(59, 130, 246, 0.1); padding: 2px 6px; border-radius: 3px; font-family: 'Consolas', 'Monaco', monospace; }");
+            html.AppendLine("pre { background-color: rgba(0, 0, 0, 0.05); padding: 15px; border-radius: 8px; overflow-x: auto; }");
+            html.AppendLine("pre code { background-color: transparent; padding: 0; }");
+            html.AppendLine("ul, ol { margin-left: 20px; }");
+            html.AppendLine("li { margin: 8px 0; }");
+            html.AppendLine("strong { color: #3b82f6; font-weight: 600; }");
+            html.AppendLine("em { font-style: italic; }");
+            html.AppendLine("blockquote { border-left: 4px solid #3b82f6; padding-left: 15px; margin-left: 0; color: #6b7280; }");
+            html.AppendLine("hr { border: none; border-top: 1px solid #e5e7eb; margin: 30px 0; }");
+            html.AppendLine("table { border-collapse: collapse; width: 100%; margin: 20px 0; }");
+            html.AppendLine("th, td { border: 1px solid #e5e7eb; padding: 12px; text-align: left; }");
+            html.AppendLine("th { background-color: rgba(59, 130, 246, 0.1); font-weight: 600; }");
+            html.AppendLine("a { color: #3b82f6; text-decoration: none; }");
+            html.AppendLine("a:hover { text-decoration: underline; }");
+            if (isDarkMode)
+            {
+                html.AppendLine("body { background-color: #0d0d0d; color: #fafafa; }");
+                html.AppendLine("code { background-color: rgba(59, 130, 246, 0.2); }");
+                html.AppendLine("pre { background-color: rgba(255, 255, 255, 0.05); }");
+                html.AppendLine("th { background-color: rgba(59, 130, 246, 0.2); }");
+                html.AppendLine("th, td { border-color: #374151; }");
+                html.AppendLine("hr { border-color: #374151; }");
+            }
+            html.AppendLine("</style>");
+            html.AppendLine("</head>");
+            html.AppendLine("<body>");
+
+            // Simple markdown to HTML conversion
+            var lines = markdown.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            bool inCodeBlock = false;
+            bool inList = false;
+            string listType = "";
+
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+
+                // Code blocks
+                if (trimmed.StartsWith("```"))
+                {
+                    if (inCodeBlock)
+                    {
+                        html.AppendLine("</pre>");
+                        inCodeBlock = false;
+                    }
+                    else
+                    {
+                        var language = trimmed.Length > 3 ? trimmed.Substring(3).Trim() : "";
+                        html.AppendLine($"<pre><code class='language-{language}'>");
+                        inCodeBlock = true;
+                    }
+                    continue;
+                }
+
+                if (inCodeBlock)
+                {
+                    html.AppendLine(WebUtility.HtmlEncode(line));
+                    continue;
+                }
+
+                // Close list if needed
+                if (inList && !trimmed.StartsWith("-") && !trimmed.StartsWith("*") && !trimmed.StartsWith("+") && !Regex.IsMatch(trimmed, @"^\d+\.\s") && trimmed != "")
+                {
+                    html.AppendLine($"</{listType}>");
+                    inList = false;
+                }
+
+                // Headers
+                if (trimmed.StartsWith("# "))
+                {
+                    html.AppendLine($"<h1>{ProcessInlineMarkdown(trimmed.Substring(2))}</h1>");
+                }
+                else if (trimmed.StartsWith("## "))
+                {
+                    html.AppendLine($"<h2>{ProcessInlineMarkdown(trimmed.Substring(3))}</h2>");
+                }
+                else if (trimmed.StartsWith("### "))
+                {
+                    html.AppendLine($"<h3>{ProcessInlineMarkdown(trimmed.Substring(4))}</h3>");
+                }
+                else if (trimmed.StartsWith("#### "))
+                {
+                    html.AppendLine($"<h4>{ProcessInlineMarkdown(trimmed.Substring(5))}</h4>");
+                }
+                // Horizontal rule
+                else if (trimmed == "---" || trimmed == "***")
+                {
+                    html.AppendLine("<hr>");
+                }
+                // Unordered list
+                else if (trimmed.StartsWith("- ") || trimmed.StartsWith("* ") || trimmed.StartsWith("+ "))
+                {
+                    if (!inList || listType != "ul")
+                    {
+                        if (inList) html.AppendLine($"</{listType}>");
+                        html.AppendLine("<ul>");
+                        inList = true;
+                        listType = "ul";
+                    }
+                    html.AppendLine($"<li>{ProcessInlineMarkdown(trimmed.Substring(2))}</li>");
+                }
+                // Ordered list
+                else if (Regex.IsMatch(trimmed, @"^\d+\.\s"))
+                {
+                    if (!inList || listType != "ol")
+                    {
+                        if (inList) html.AppendLine($"</{listType}>");
+                        html.AppendLine("<ol>");
+                        inList = true;
+                        listType = "ol";
+                    }
+                    var listContent = Regex.Replace(trimmed, @"^\d+\.\s", "");
+                    html.AppendLine($"<li>{ProcessInlineMarkdown(listContent)}</li>");
+                }
+                // Empty line
+                else if (trimmed == "")
+                {
+                    html.AppendLine("<br>");
+                }
+                // Regular paragraph
+                else
+                {
+                    html.AppendLine($"<p>{ProcessInlineMarkdown(trimmed)}</p>");
+                }
+            }
+
+            if (inList)
+            {
+                html.AppendLine($"</{listType}>");
+            }
+            if (inCodeBlock)
+            {
+                html.AppendLine("</pre>");
+            }
+
+            html.AppendLine("</body>");
+            html.AppendLine("</html>");
+
+            return html.ToString();
+        }
+
+        /// <summary>
+        /// Processes inline markdown formatting (bold, italic, code, links)
+        /// </summary>
+        private string ProcessInlineMarkdown(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return "";
+
+            // Escape HTML first
+            text = WebUtility.HtmlEncode(text);
+
+            // Bold **text** or __text__
+            text = Regex.Replace(text, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+            text = Regex.Replace(text, @"__(.+?)__", "<strong>$1</strong>");
+
+            // Italic *text* or _text_ (but not if part of bold)
+            text = Regex.Replace(text, @"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", "<em>$1</em>");
+            text = Regex.Replace(text, @"(?<!_)_(?!_)(.+?)(?<!_)_(?!_)", "<em>$1</em>");
+
+            // Inline code `code`
+            text = Regex.Replace(text, @"`(.+?)`", "<code>$1</code>");
+
+            // Links [text](url)
+            text = Regex.Replace(text, @"\[(.+?)\]\((.+?)\)", "<a href='$2' target='_blank'>$1</a>");
+
+            return text;
+        }
+
+        /// <summary>
+        /// Shows a command palette for quick action access (Ctrl+K)
+        /// </summary>
+        private void ShowCommandPalette()
+        {
+            var paletteForm = new Form
+            {
+                Text = "Command Palette",
+                Size = new Size(600, 400),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.None,
+                ShowInTaskbar = false,
+                TopMost = true
+            };
+            ApplyThemeToForm(paletteForm);
+            
+            var mainPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 1,
+                Padding = new Padding(0)
+            };
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            
+            // Search box
+            var searchBox = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                Font = CreateFont(14F),
+                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
+                BorderStyle = BorderStyle.None,
+                Padding = new Padding(20, 12, 20, 12)
+            };
+            ApplyThemeToControl(searchBox);
+            
+            // Add placeholder text manually (TextBox doesn't have PlaceholderText in .NET 6.0)
+            var placeholderText = "Type to search commands... (Ctrl+K to open)";
+            searchBox.Text = placeholderText;
+            searchBox.ForeColor = GetThemeColor(TEXT_DARK_TERTIARY, TEXT_TERTIARY);
+            searchBox.Enter += (s, e) =>
+            {
+                if (searchBox.Text == placeholderText)
+                {
+                    searchBox.Text = "";
+                    searchBox.ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY);
+                }
+            };
+            searchBox.Leave += (s, e) =>
+            {
+                if (string.IsNullOrEmpty(searchBox.Text))
+                {
+                    searchBox.Text = placeholderText;
+                    searchBox.ForeColor = GetThemeColor(TEXT_DARK_TERTIARY, TEXT_TERTIARY);
+                }
+            };
+            
+            // Commands list
+            var commandsList = new ListBox
+            {
+                Dock = DockStyle.Fill,
+                Font = CreateFont(11F),
+                BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
+                ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
+                BorderStyle = BorderStyle.None,
+                IntegralHeight = false
+            };
+            ApplyThemeToControl(commandsList);
+            
+            // Define commands
+            (string name, string icon, Action action)[] commands = new (string, string, Action)[]
+            {
+                ("Check Updates", "🔄", () => BtnCheck_Click(null, EventArgs.Empty)),
+                ("List All Apps", "📋", () => BtnListAll_Click(null, EventArgs.Empty)),
+                ("Search & Install", "🔍", () => BtnSearchInstall_Click(null, EventArgs.Empty)),
+                ("Upgrade Selected", "⬆️", () => BtnUpgrade_Click(null, EventArgs.Empty)),
+                ("Upgrade All", "🚀", () => BtnUpgradeAll_Click(null, EventArgs.Empty)),
+                ("Install Selected", "📦", () => BtnInstall_Click(null, EventArgs.Empty)),
+                ("Uninstall Selected", "🗑️", () => BtnUninstall_Click(null, EventArgs.Empty)),
+                ("Repair Selected", "🔧", () => BtnRepair_Click(null, EventArgs.Empty)),
+                ("AI Research", "🤖", () => BtnResearch_Click(null, EventArgs.Empty)),
+                ("Export", "💾", () => ExportUpgradeList(null, EventArgs.Empty)),
+                ("Show Logs", "📄", () => BtnLogs_Click(null, EventArgs.Empty)),
+                ("Operation History", "📜", () => ShowOperationHistory()),
+                ("Settings", "⚙️", () => ShowSettingsMenu(null, EventArgs.Empty)),
+                ("Help", "❓", () => ShowHelpMenu(null, EventArgs.Empty))
+            };
+            
+            foreach ((string name, string icon, Action _) in commands)
+            {
+                commandsList.Items.Add($"{icon} {name}");
+            }
+            
+            // Filter commands based on search
+            searchBox.TextChanged += (s, e) =>
+            {
+                var search = searchBox.Text.ToLower();
+                if (search == placeholderText.ToLower()) return;
+                
+                commandsList.Items.Clear();
+                foreach ((string name, string icon, Action _) in commands)
+                {
+                    if (string.IsNullOrEmpty(search) || name.ToLower().Contains(search) || icon.Contains(search))
+                    {
+                        commandsList.Items.Add($"{icon} {name}");
+                    }
+                }
+                if (commandsList.Items.Count > 0)
+                    commandsList.SelectedIndex = 0;
+            };
+            
+            // Execute command on Enter or double-click
+            commandsList.DoubleClick += (s, e) => ExecuteCommand(commands, commandsList, paletteForm);
+            searchBox.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter && commandsList.SelectedIndex >= 0)
+                {
+                    ExecuteCommand(commands, commandsList, paletteForm);
+                }
+                else if (e.KeyCode == Keys.Escape)
+                {
+                    paletteForm.Close();
+                }
+                else if (e.KeyCode == Keys.Down)
+                {
+                    if (commandsList.Items.Count > 0)
+                    {
+                        commandsList.SelectedIndex = Math.Min(commandsList.SelectedIndex + 1, commandsList.Items.Count - 1);
+                        commandsList.Focus();
+                    }
+                }
+                else if (e.KeyCode == Keys.Up)
+                {
+                    commandsList.SelectedIndex = Math.Max(commandsList.SelectedIndex - 1, 0);
+                    commandsList.Focus();
+                }
+            };
+            
+            commandsList.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    ExecuteCommand(commands, commandsList, paletteForm);
+                }
+                else if (e.KeyCode == Keys.Escape)
+                {
+                    paletteForm.Close();
+                }
+            };
+            
+            // Close on click outside
+            paletteForm.Deactivate += (s, e) => paletteForm.Close();
+            
+            mainPanel.Controls.Add(searchBox, 0, 0);
+            mainPanel.Controls.Add(commandsList, 0, 1);
+            paletteForm.Controls.Add(mainPanel);
+            
+            paletteForm.Show();
+            searchBox.Focus();
+        }
+        
+        /// <summary>
+        /// Executes the selected command from the command palette
+        /// </summary>
+        private void ExecuteCommand((string name, string icon, Action action)[] commands, ListBox commandsList, Form paletteForm)
+        {
+            if (commandsList.SelectedIndex < 0) return;
+            
+            var selected = commandsList.SelectedItem?.ToString();
+            if (string.IsNullOrEmpty(selected)) return;
+            
+            // Find matching command
+            foreach (var (name, icon, action) in commands)
+            {
+                if (selected.Contains(name))
+                {
+                    paletteForm.Close();
+                    action();
+                    return;
+                }
+            }
         }
 
         private void ShowKeyboardShortcuts()
@@ -3969,6 +4963,10 @@ Progress Tracking:
                 case Keys.Control | Keys.H:
                     // Help
                     ShowHelpMenu(null, EventArgs.Empty);
+                    return true;
+                case Keys.Control | Keys.K:
+                    // Command Palette
+                    ShowCommandPalette();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
