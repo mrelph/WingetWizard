@@ -65,3 +65,7 @@ If WiX is installed but not in PATH:
 - Verify WiX is in PATH: `where candle.exe`
 - Check that `installer.wxs` exists in project root
 
+
+
+
+

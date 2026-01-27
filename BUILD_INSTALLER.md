@@ -122,3 +122,7 @@ publish/
 
 The installer supports automatic upgrades - installing a newer version will automatically uninstall the old version.
 
+
+
+
+

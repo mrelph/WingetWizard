@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+  <!-- Include source files from parent project -->
+  <ItemGroup>
+    <Compile Include="..\Services\AIService.cs" Link="Services\AIService.cs" />
+    <Compile Include="..\Services\BedrockService.cs" Link="Services\BedrockService.cs" />
+    <Compile Include="..\Services\BedrockModelDiscoveryService.cs" Link="Services\BedrockModelDiscoveryService.cs" />
+    <Compile Include="..\Services\CachingService.cs" Link="Services\CachingService.cs" />
+    <Compile Include="..\Models\UpgradableApp.cs" Link="Models\UpgradableApp.cs" />
+    <Compile Include="..\Utils\AppConstants.cs" Link="Utils\AppConstants.cs" />
+    <Compile Include="..\Utils\ValidationUtils.cs" Link="Utils\ValidationUtils.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\config.json" Link="config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
