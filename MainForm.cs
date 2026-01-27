@@ -438,19 +438,20 @@ namespace WingetWizard
 
             statusBar.Controls.Add(statusLabel);
 
-            // Position everything centered
+            // Position everything centered - use explicit size since AutoSize doesn't work well with centering
             var centerPanel = new Panel
             {
-                AutoSize = true,
+                Size = new Size(550, 400),
+                BackColor = Color.Transparent,
                 Anchor = AnchorStyles.None
             };
 
-            logoImage.Location = new Point(0, 0);
-            greetingLabel.Location = new Point(0, 90);
+            logoImage.Location = new Point(225, 0);  // Center the 80px logo in 550px width
+            greetingLabel.Location = new Point(0, 100);
             // Position username next to greeting with small gap
-            userNameLabel.Location = new Point(greetingLabel.PreferredWidth + 8, 90);
-            subtitleLabel.Location = new Point(0, 140);
-            actionsPanel.Location = new Point(0, 180);
+            userNameLabel.Location = new Point(greetingLabel.PreferredWidth + 8, 100);
+            subtitleLabel.Location = new Point(0, 150);
+            actionsPanel.Location = new Point(0, 200);
 
             centerPanel.Controls.Add(logoImage);
             centerPanel.Controls.Add(greetingLabel);
@@ -458,23 +459,26 @@ namespace WingetWizard
             centerPanel.Controls.Add(subtitleLabel);
             centerPanel.Controls.Add(actionsPanel);
 
-            // Center the content
-            centerPanel.Location = new Point(
-                (welcomePanel.Width - centerPanel.Width) / 2,
-                (welcomePanel.Height - centerPanel.Height) / 2 - 50
-            );
-
             welcomePanel.Controls.Add(centerPanel);
             welcomePanel.Controls.Add(statusBar);
 
-            // Handle resize to keep content centered
-            welcomePanel.Resize += (s, e) =>
+            // Center the content after panel is added (use Load event for initial centering)
+            void CenterContent()
             {
-                centerPanel.Location = new Point(
-                    (welcomePanel.Width - centerPanel.Width) / 2,
-                    (welcomePanel.Height - centerPanel.Height) / 2 - 50
-                );
-            };
+                if (welcomePanel.Width > 0 && welcomePanel.Height > 0)
+                {
+                    centerPanel.Location = new Point(
+                        Math.Max(0, (welcomePanel.Width - centerPanel.Width) / 2),
+                        Math.Max(0, (welcomePanel.Height - centerPanel.Height) / 2 - 30)
+                    );
+                }
+            }
+
+            welcomePanel.Resize += (s, e) => CenterContent();
+            welcomePanel.VisibleChanged += (s, e) => { if (welcomePanel.Visible) CenterContent(); };
+
+            // Also center on first paint
+            welcomePanel.Paint += (s, e) => CenterContent();
 
             return welcomePanel;
         }
@@ -599,7 +603,10 @@ namespace WingetWizard
         {
             var welcomePanel = splitter?.Panel1?.Controls?.OfType<Panel>()?.FirstOrDefault(p => p.Tag?.ToString() == "welcome");
             if (welcomePanel != null)
+            {
                 welcomePanel.Visible = true;
+                welcomePanel.BringToFront();
+            }
         }
 
         // Safe string operations to prevent null reference exceptions
@@ -1286,6 +1293,7 @@ namespace WingetWizard
             
             splitter.Panel1.Controls.Add(lstApps);
             splitter.Panel1.Controls.Add(welcomePanel);
+            welcomePanel.BringToFront(); // Ensure welcome panel is on top initially
             splitter.Panel2.Controls.Add(txtLogs);
             string[] columns = { "Name:250", "ID:200", "Current Version:120", "Available Version:120", "Source:80", "Status:100", "AI Recommendation:200" };
             foreach (var col in columns) { 
