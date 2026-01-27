@@ -670,6 +670,7 @@ namespace WingetWizard.Services
         {
             return new List<BedrockModel>
             {
+                new() { ModelId = AppConstants.BEDROCK_CLAUDE_SONNET_45, ModelName = "Claude Sonnet 4.5 (Recommended)", ProviderName = "Anthropic", InputModalities = new List<string> {"TEXT"}, OutputModalities = new List<string> {"TEXT"} },
                 new() { ModelId = AppConstants.BEDROCK_CLAUDE_35_SONNET_V2, ModelName = "Claude 3.5 Sonnet v2", ProviderName = "Anthropic", InputModalities = new List<string> {"TEXT"}, OutputModalities = new List<string> {"TEXT"} },
                 new() { ModelId = AppConstants.BEDROCK_CLAUDE_35_SONNET, ModelName = "Claude 3.5 Sonnet", ProviderName = "Anthropic", InputModalities = new List<string> {"TEXT"}, OutputModalities = new List<string> {"TEXT"} },
                 new() { ModelId = AppConstants.BEDROCK_CLAUDE_35_HAIKU, ModelName = "Claude 3.5 Haiku", ProviderName = "Anthropic", InputModalities = new List<string> {"TEXT"}, OutputModalities = new List<string> {"TEXT"} },

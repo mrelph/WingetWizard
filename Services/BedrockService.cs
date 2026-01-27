@@ -34,7 +34,7 @@ namespace WingetWizard.Services
             _accessKeyId = accessKeyId?.Trim() ?? "";
             _secretAccessKey = secretAccessKey?.Trim() ?? "";
             _region = region?.Trim() ?? AppConstants.DEFAULT_AWS_REGION;
-            _selectedModel = selectedModel?.Trim() ?? AppConstants.BEDROCK_CLAUDE_35_SONNET_V2;
+            _selectedModel = selectedModel?.Trim() ?? AppConstants.BEDROCK_CLAUDE_SONNET_45;
         }
 
         /// <summary>

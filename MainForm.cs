@@ -124,6 +124,9 @@ namespace WingetWizard
         private ProgressBar progressBar = null!;
         private Label statusLabel = null!;
         private Label versionLabel = null!;
+        private Panel progressRing = null!;
+        private System.Windows.Forms.Timer _progressRingTimer = null!;
+        private int _progressRingAngle = 0;
 
         private SplitContainer splitter = null!;  // Resizable layout with hidden-by-default logs
         private ToolTip buttonToolTips = null!;   // Tooltips for buttons when window is scaled down
@@ -172,9 +175,12 @@ namespace WingetWizard
         private const int SIDEBAR_WIDTH_EXPANDED = 240;
         private const int SIDEBAR_WIDTH_COLLAPSED = 60;
 
+        // ListView hover tracking for enhanced UX
+        private int _hoveredItemIndex = -1;
+
         /// <summary>
         /// Creates modern typography with intelligent font fallback system.
-        /// Prioritizes Calibri for Claude-inspired aesthetics, with Segoe UI and system fallbacks.
+        /// Prioritizes Segoe UI Variable for Windows 11 aesthetics, with fallbacks.
         /// Ensures consistent, readable typography across different Windows environments.
         /// </summary>
         /// <param name="size">Font size in points</param>
@@ -182,21 +188,75 @@ namespace WingetWizard
         /// <returns>Font instance with best available modern typeface</returns>
         private static Font CreateFont(float size, FontStyle style = FontStyle.Regular)
         {
-            try
-            {
-                return new Font("Calibri", size, style);  // Primary: Modern Calibri (Claude-inspired)
-            }
+            // Try Windows 11 variable font first for modern look
+            try { return new Font("Segoe UI Variable Display", size, style); }
             catch
             {
-                try
-                {
-                    return new Font("Segoe UI", size, style);  // Secondary: Segoe UI (Windows standard)
-                }
+                try { return new Font("Segoe UI Variable", size, style); }
                 catch
                 {
-                    return new Font(FontFamily.GenericSansSerif, size, style);  // Fallback: System default
+                    try { return new Font("Segoe UI", size, style); }
+                    catch { return new Font(FontFamily.GenericSansSerif, size, style); }
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the Windows system accent color for personalized theming.
+        /// </summary>
+        /// <returns>System accent color or default Windows blue</returns>
+        private static Color GetSystemAccentColor()
+        {
+            try
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                    @"Software\Microsoft\Windows\DWM");
+                var accentColor = key?.GetValue("AccentColor");
+
+                if (accentColor is int colorValue)
+                {
+                    // Windows stores as ABGR, convert to ARGB
+                    return Color.FromArgb(
+                        255,
+                        (byte)(colorValue & 0xFF),           // R
+                        (byte)((colorValue >> 8) & 0xFF),    // G
+                        (byte)((colorValue >> 16) & 0xFF));  // B
+                }
+            }
+            catch { }
+            return Color.FromArgb(0, 120, 212); // Default Windows blue
+        }
+
+        /// <summary>
+        /// Blends two colors together based on a ratio for smooth animations.
+        /// </summary>
+        private static Color BlendColors(Color c1, Color c2, float ratio)
+        {
+            ratio = Math.Clamp(ratio, 0f, 1f);
+            return Color.FromArgb(
+                (int)(c1.A + (c2.A - c1.A) * ratio),
+                (int)(c1.R + (c2.R - c1.R) * ratio),
+                (int)(c1.G + (c2.G - c1.G) * ratio),
+                (int)(c1.B + (c2.B - c1.B) * ratio));
+        }
+
+        /// <summary>
+        /// Creates a rounded rectangle path for modern UI elements.
+        /// </summary>
+        private static System.Drawing.Drawing2D.GraphicsPath CreateRoundedRectanglePath(Rectangle rect, int radius)
+        {
+            var path = new System.Drawing.Drawing2D.GraphicsPath();
+            var diameter = radius * 2;
+
+            if (diameter > rect.Width) diameter = rect.Width;
+            if (diameter > rect.Height) diameter = rect.Height;
+
+            path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90);
+            path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90);
+            path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90);
+            path.CloseFigure();
+            return path;
         }
 
         /// <summary>
@@ -211,6 +271,21 @@ namespace WingetWizard
                 Dock = DockStyle.Fill,
                 BackColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY),
                 Visible = true
+            };
+
+            // Add subtle gradient overlay for modern look
+            welcomePanel.Paint += (s, e) =>
+            {
+                var rect = welcomePanel.ClientRectangle;
+                if (rect.Width <= 0 || rect.Height <= 0) return;
+
+                // Create subtle radial-like gradient from top-left
+                using var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    rect,
+                    Color.FromArgb(isDarkMode ? 15 : 8, GetSystemAccentColor()),
+                    Color.Transparent,
+                    System.Drawing.Drawing2D.LinearGradientMode.ForwardDiagonal);
+                e.Graphics.FillRectangle(brush, rect);
             };
 
             // Get time-based greeting for personalized experience
@@ -279,21 +354,34 @@ namespace WingetWizard
             // Main greeting label with personalized message - refined typography
             var greetingLabel = new Label
             {
-                Text = $"{greeting}, {userName}",
-                Font = CreateFont(32F, FontStyle.Bold),
+                Text = $"{greeting},",
+                Font = CreateFont(36F, FontStyle.Bold),
                 ForeColor = GetThemeColor(TEXT_DARK_PRIMARY, TEXT_PRIMARY),
                 AutoSize = true,
-                TextAlign = ContentAlignment.MiddleCenter
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.Transparent
+            };
+
+            // Username in accent color for personalization
+            var userNameLabel = new Label
+            {
+                Text = userName,
+                Font = CreateFont(36F, FontStyle.Bold),
+                ForeColor = GetSystemAccentColor(),
+                AutoSize = true,
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.Transparent
             };
 
             // Subtitle with refined helpful tone
             var subtitleLabel = new Label
             {
-                Text = "Ready to manage your packages? Choose an action below:",
-                Font = CreateFont(15F, FontStyle.Regular),
+                Text = "Let's manage your packages with AI assistance",
+                Font = CreateFont(14F, FontStyle.Regular),
                 ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY),
                 AutoSize = true,
-                TextAlign = ContentAlignment.MiddleCenter
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.Transparent
             };
 
             // Action suggestions panel - Modern card-based layout
@@ -359,11 +447,14 @@ namespace WingetWizard
 
             logoImage.Location = new Point(0, 0);
             greetingLabel.Location = new Point(0, 90);
-            subtitleLabel.Location = new Point(0, 130);
-            actionsPanel.Location = new Point(0, 160);
+            // Position username next to greeting with small gap
+            userNameLabel.Location = new Point(greetingLabel.PreferredWidth + 8, 90);
+            subtitleLabel.Location = new Point(0, 140);
+            actionsPanel.Location = new Point(0, 180);
 
             centerPanel.Controls.Add(logoImage);
             centerPanel.Controls.Add(greetingLabel);
+            centerPanel.Controls.Add(userNameLabel);
             centerPanel.Controls.Add(subtitleLabel);
             centerPanel.Controls.Add(actionsPanel);
 
@@ -393,24 +484,49 @@ namespace WingetWizard
             var isDark = isDarkMode;
             var card = new Panel
             {
-                Width = 220,
-                Height = 140,
-                BackColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY),
+                Width = 224,  // Slightly wider to accommodate shadow
+                Height = 144, // Slightly taller to accommodate shadow
+                BackColor = Color.Transparent, // Transparent for custom drawing
                 Margin = new Padding(12),
                 Cursor = Cursors.Hand,
                 Tag = title, // Store the action for potential click handling
-                Padding = new Padding(20, 20, 20, 20)
+                Padding = new Padding(24, 24, 24, 24)
             };
 
-            // Track hover state for border color
+            // Track hover state for border color and shadow
             var isHovered = false;
-            
-            // Draw border with accent color on hover (single Paint handler)
+            var cardBgColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY);
+
+            // Draw card with rounded corners, shadow, and accent border on hover
             card.Paint += (s, e) =>
             {
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+                var cardRect = new Rectangle(0, 0, card.Width - 4, card.Height - 4);
+                var shadowRect = new Rectangle(4, 4, card.Width - 4, card.Height - 4);
+
+                // Draw shadow (subtle, offset down-right)
+                var shadowColor = GetThemeColor(Color.FromArgb(40, 0, 0, 0), Color.FromArgb(25, 0, 0, 0));
+                using (var shadowPath = CreateRoundedRectanglePath(shadowRect, 8))
+                using (var shadowBrush = new SolidBrush(shadowColor))
+                {
+                    e.Graphics.FillPath(shadowBrush, shadowPath);
+                }
+
+                // Draw card background with rounded corners
+                using (var cardPath = CreateRoundedRectanglePath(cardRect, 8))
+                using (var cardBrush = new SolidBrush(isHovered ? GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY) : cardBgColor))
+                {
+                    e.Graphics.FillPath(cardBrush, cardPath);
+                }
+
+                // Draw border with accent color on hover
                 var borderColor = isHovered ? accentColor : GetThemeColor(BORDER_DARK, BORDER_LIGHT);
-                using var pen = new Pen(borderColor, isHovered ? 2 : 1);
-                e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
+                using (var cardPath = CreateRoundedRectanglePath(cardRect, 8))
+                using (var pen = new Pen(borderColor, isHovered ? 2 : 1))
+                {
+                    e.Graphics.DrawPath(pen, cardPath);
+                }
             };
 
             // Title with accent color - refined typography
@@ -498,21 +614,6 @@ namespace WingetWizard
         private bool IsFormValid()
         {
             return !this.IsDisposed && this.Created;
-        }
-
-        // Helper method to create rounded rectangle path for cool minimalist buttons
-        private System.Drawing.Drawing2D.GraphicsPath CreateRoundedRectanglePath(Rectangle rect, int radius)
-        {
-            var path = new System.Drawing.Drawing2D.GraphicsPath();
-            var diameter = radius * 2;
-            
-            path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90);
-            path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90);
-            path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90);
-            path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90);
-            path.CloseFigure();
-            
-            return path;
         }
 
         /// <summary>
@@ -622,12 +723,13 @@ namespace WingetWizard
             
             // Add groups to content panel (bottom to top for proper docking with DockStyle.Top)
             // Order matters: last added appears at top, first added at bottom
-            contentPanel.Controls.Add(sourcePanel);
-            contentPanel.Controls.Add(primaryGroup);
-            contentPanel.Controls.Add(packageGroup);
-            contentPanel.Controls.Add(aiGroup);
+            // We want: Source (top) -> Primary -> Package -> AI -> Tools -> Settings (bottom)
+            contentPanel.Controls.Add(settingsGroup);  // Add first = appears at bottom
             contentPanel.Controls.Add(toolsGroup);
-            contentPanel.Controls.Add(settingsGroup);
+            contentPanel.Controls.Add(aiGroup);
+            contentPanel.Controls.Add(packageGroup);
+            contentPanel.Controls.Add(primaryGroup);
+            contentPanel.Controls.Add(sourcePanel);     // Add last = appears at top
             
             scrollPanel.Controls.Add(contentPanel);
             sidebar.Controls.Add(scrollPanel);
@@ -677,28 +779,29 @@ namespace WingetWizard
             };
             ApplyThemeToControl(header);
             
-            // Buttons container - positioned below header using TableLayoutPanel for better control
+            // Buttons container - will fill remaining space after header
             var buttonsPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Location = new Point(0, headerHeight),
-                Height = totalButtonHeight,
                 BackColor = Color.Transparent,
                 AutoSize = false,
                 Padding = new Padding(0)
             };
             
             // Add buttons in reverse order (since they dock to Top, last one added appears at top)
+            // So we reverse to get correct visual order
             for (int i = buttons.Length - 1; i >= 0; i--)
             {
-                buttons[i].Dock = DockStyle.Top;
-                buttons[i].Height = buttonHeight;
-                buttons[i].Margin = new Padding(8, 4, 8, 4);
-                buttons[i].Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-                buttonsPanel.Controls.Add(buttons[i]);
+                if (buttons[i] != null)
+                {
+                    buttons[i].Dock = DockStyle.Top;
+                    buttons[i].Height = buttonHeight;
+                    buttons[i].Margin = new Padding(8, 4, 8, 4);
+                    buttonsPanel.Controls.Add(buttons[i]);
+                }
             }
             
-            // Create a container panel for header and buttons
+            // Group header panel - must be added LAST so it appears on top (DockStyle.Top behavior)
             var headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
@@ -707,6 +810,7 @@ namespace WingetWizard
             };
             headerPanel.Controls.Add(header);
             
+            // Add panels: buttonsPanel first (fills space), then headerPanel (docks to top)
             group.Controls.Add(buttonsPanel);
             group.Controls.Add(headerPanel);
             
@@ -714,11 +818,10 @@ namespace WingetWizard
         }
 
         /// <summary>
-        /// Creates a sidebar-styled button with icon and text
+        /// Creates a sidebar-styled button with icon, text, and smooth hover animations
         /// </summary>
         private Button CreateSidebarButton(string text, string icon, Color accentColor, string? tooltip = null)
         {
-            var isDark = isDarkMode;
             var button = new Button
             {
                 Text = _sidebarCollapsed ? icon : $"{icon} {text}",
@@ -731,44 +834,86 @@ namespace WingetWizard
                 Cursor = Cursors.Hand,
                 UseVisualStyleBackColor = false
             };
-            
+
             button.FlatAppearance.BorderSize = 0;
             button.FlatAppearance.BorderColor = button.BackColor;
-            
+
             var originalBackColor = button.BackColor;
             var originalForeColor = button.ForeColor;
-            
-            // Hover effect
+            var hoverBackColor = GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY);
+
+            // Animation state
+            System.Windows.Forms.Timer? animTimer = null;
+            int animStep = 0;
+            const int ANIM_STEPS = 8;
+            const int ANIM_INTERVAL = 12;
+
+            // Smooth hover animation
             button.MouseEnter += (s, e) =>
             {
-                button.BackColor = GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY);
-                button.ForeColor = accentColor;
+                animStep = 0;
+                animTimer?.Stop();
+                animTimer = new System.Windows.Forms.Timer { Interval = ANIM_INTERVAL };
+                animTimer.Tick += (ts, te) =>
+                {
+                    animStep++;
+                    float progress = (float)animStep / ANIM_STEPS;
+                    button.BackColor = BlendColors(originalBackColor, hoverBackColor, progress);
+                    button.ForeColor = BlendColors(originalForeColor, accentColor, progress);
+
+                    if (animStep >= ANIM_STEPS)
+                    {
+                        animTimer.Stop();
+                        animTimer.Dispose();
+                        animTimer = null;
+                    }
+                };
+                animTimer.Start();
             };
-            
+
             button.MouseLeave += (s, e) =>
             {
-                button.BackColor = originalBackColor;
-                button.ForeColor = originalForeColor;
+                animStep = 0;
+                animTimer?.Stop();
+                animTimer = new System.Windows.Forms.Timer { Interval = ANIM_INTERVAL };
+                var currentBack = button.BackColor;
+                var currentFore = button.ForeColor;
+                animTimer.Tick += (ts, te) =>
+                {
+                    animStep++;
+                    float progress = (float)animStep / ANIM_STEPS;
+                    button.BackColor = BlendColors(currentBack, originalBackColor, progress);
+                    button.ForeColor = BlendColors(currentFore, originalForeColor, progress);
+
+                    if (animStep >= ANIM_STEPS)
+                    {
+                        animTimer.Stop();
+                        animTimer.Dispose();
+                        animTimer = null;
+                    }
+                };
+                animTimer.Start();
             };
-            
-            // Pressed state
+
+            // Pressed state - instant feedback
             button.MouseDown += (s, e) =>
             {
+                animTimer?.Stop();
                 button.BackColor = accentColor;
                 button.ForeColor = Color.White;
             };
-            
+
             button.MouseUp += (s, e) =>
             {
-                button.BackColor = GetThemeColor(BG_DARK_TERTIARY, BG_TERTIARY);
+                button.BackColor = hoverBackColor;
                 button.ForeColor = accentColor;
             };
-            
+
             if (!string.IsNullOrEmpty(tooltip))
             {
                 buttonToolTips?.SetToolTip(button, tooltip);
             }
-            
+
             return button;
         }
 
@@ -778,6 +923,12 @@ namespace WingetWizard
         /// </summary>
         public MainForm()
         {
+            // Enable double buffering for smooth animations
+            SetStyle(ControlStyles.OptimizedDoubleBuffer |
+                     ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.UserPaint, true);
+            UpdateStyles();
+
             // Initialize services
             _settingsService = new SettingsService();
             _secureSettingsService = new SecureSettingsService();
@@ -941,6 +1092,44 @@ namespace WingetWizard
                 ForeColor = PRIMARY_BLUE
             };
             
+            // Animated progress ring for modern feedback
+            progressRing = new Panel
+            {
+                Size = new Size(28, 28),
+                Location = new Point(8, 9),
+                BackColor = Color.Transparent,
+                Visible = false
+            };
+
+            progressRing.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                var rect = new Rectangle(2, 2, 22, 22);
+
+                // Background ring
+                var bgColor = GetThemeColor(Color.FromArgb(60, 60, 60), Color.FromArgb(220, 220, 220));
+                using (var pen = new Pen(bgColor, 3))
+                {
+                    e.Graphics.DrawArc(pen, rect, 0, 360);
+                }
+
+                // Animated accent arc
+                var accentColor = GetSystemAccentColor();
+                using (var pen = new Pen(accentColor, 3))
+                {
+                    pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+                    pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+                    e.Graphics.DrawArc(pen, rect, _progressRingAngle, 90);
+                }
+            };
+
+            _progressRingTimer = new System.Windows.Forms.Timer { Interval = 16 }; // ~60fps
+            _progressRingTimer.Tick += (s, e) =>
+            {
+                _progressRingAngle = (_progressRingAngle + 8) % 360;
+                progressRing.Invalidate();
+            };
+
             statusLabel = new Label
             {
                 Text = "Ready",
@@ -948,7 +1137,7 @@ namespace WingetWizard
                 ForeColor = GetThemeColor(TEXT_DARK_SECONDARY, TEXT_SECONDARY),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Dock = DockStyle.Fill,
-                Padding = new Padding(32, 8, 0, 0)
+                Padding = new Padding(42, 8, 0, 0) // Increased padding to make room for ring
             };
             
             // Modern cancel button for long-running operations
@@ -999,6 +1188,7 @@ namespace WingetWizard
             };
             
             progressPanel.Controls.Add(progressBar);
+            progressPanel.Controls.Add(progressRing);
             progressPanel.Controls.Add(statusLabel);
             progressPanel.Controls.Add(_cancelButton);
             progressPanel.Tag = "progress";
@@ -1014,24 +1204,24 @@ namespace WingetWizard
                 BackColor = Color.Transparent
             };
 
-            // Create buttons for sidebar first
-            (btnCheck, btnUpgrade, btnUpgradeAll, btnListAll, btnResearch, btnLogs, btnExport, btnHelp, btnSettings) = 
-                (CreateSidebarButton("Check Updates", "🔄", PRIMARY_BLUE, "Check for available package updates"),
-                 CreateSidebarButton("Upgrade Selected", "⬆️", SUCCESS_GREEN, "Upgrade only the selected packages"),
-                 CreateSidebarButton("Upgrade All", "🚀", SUCCESS_GREEN, "Upgrade all available packages at once"),
-                 CreateSidebarButton("List All Apps", "📋", NEUTRAL_GRAY, "Show all installed applications"),
-                 CreateSidebarButton("AI Research", "🤖", PURPLE_AI, "Get AI-powered package recommendations"),
-                 CreateSidebarButton("Show Logs", "📄", NEUTRAL_GRAY, "Toggle log output visibility"), 
-                 CreateSidebarButton("Export", "💾", ORANGE_ACCENT, "Export package list to file"),
-                 CreateSidebarButton("Help", "❓", ACCENT_BLUE, "Show help menu and about information"), 
-                 CreateSidebarButton("Settings", "⚙️", NEUTRAL_GRAY, "Configure application settings"));
-            
+            // Create buttons for sidebar first (with keyboard shortcuts in tooltips)
+            (btnCheck, btnUpgrade, btnUpgradeAll, btnListAll, btnResearch, btnLogs, btnExport, btnHelp, btnSettings) =
+                (CreateSidebarButton("Check Updates", "🔄", PRIMARY_BLUE, "Check for available package updates (F5)"),
+                 CreateSidebarButton("Upgrade Selected", "⬆️", SUCCESS_GREEN, "Upgrade only the selected packages (Ctrl+U)"),
+                 CreateSidebarButton("Upgrade All", "🚀", SUCCESS_GREEN, "Upgrade all available packages at once (Ctrl+Shift+U)"),
+                 CreateSidebarButton("List All Apps", "📋", NEUTRAL_GRAY, "Show all installed applications (Ctrl+L)"),
+                 CreateSidebarButton("AI Research", "🤖", PURPLE_AI, "Get AI-powered package recommendations (Ctrl+R)"),
+                 CreateSidebarButton("Show Logs", "📄", NEUTRAL_GRAY, "Toggle log output visibility"),
+                 CreateSidebarButton("Export", "💾", ORANGE_ACCENT, "Export package list to file (Ctrl+E)"),
+                 CreateSidebarButton("Help", "❓", ACCENT_BLUE, "Show help menu and about information (Ctrl+H)"),
+                 CreateSidebarButton("Settings", "⚙️", NEUTRAL_GRAY, "Configure application settings (Ctrl+S)"));
+
             (btnInstall, btnUninstall, btnRepair) = (
                 CreateSidebarButton("Install Selected", "📦", SUCCESS_GREEN, "Install the selected packages"),
                 CreateSidebarButton("Uninstall Selected", "🗑️", ERROR_RED, "Uninstall the selected packages"),
                 CreateSidebarButton("Repair Selected", "🔧", WARNING_AMBER, "Repair the selected packages"));
-            
-            btnSearchInstall = CreateSidebarButton("Search & Install", "🔍", PURPLE_AI, "Search for new packages and install them");
+
+            btnSearchInstall = CreateSidebarButton("Search & Install", "🔍", PURPLE_AI, "Search for new packages and install them (Ctrl+F)");
             
             cmbSource = new() { 
                 DropDownStyle = ComboBoxStyle.DropDownList, 
@@ -1115,21 +1305,65 @@ namespace WingetWizard
             lstApps.MultiSelect = true;
             lstApps.HideSelection = false;
             
-            // Custom draw for alternating row colors (modern apps style)
+            // Custom draw for alternating row colors with hover states (modern UX)
             lstApps.OwnerDraw = true;
+
+            // Track hover state
+            lstApps.MouseMove += (s, e) =>
+            {
+                var info = lstApps.HitTest(e.Location);
+                var newIndex = info.Item?.Index ?? -1;
+                if (newIndex != _hoveredItemIndex)
+                {
+                    _hoveredItemIndex = newIndex;
+                    lstApps.Invalidate();
+                }
+            };
+
+            lstApps.MouseLeave += (s, e) =>
+            {
+                _hoveredItemIndex = -1;
+                lstApps.Invalidate();
+            };
+
             lstApps.DrawItem += (s, e) =>
             {
                 e.DrawDefault = true;
             };
-            
+
             lstApps.DrawSubItem += (s, e) =>
             {
-                if (e.ItemIndex % 2 == 0 && e.ItemIndex >= 0)
+                var isHovered = e.ItemIndex == _hoveredItemIndex;
+                var isAlternate = e.ItemIndex % 2 == 0;
+
+                Color bgColor;
+                if (isHovered)
                 {
-                    var rowColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY);
-                    using var brush = new SolidBrush(rowColor);
+                    // Hover highlight - slightly brighter
+                    bgColor = GetThemeColor(Color.FromArgb(48, 48, 48), Color.FromArgb(235, 243, 255));
+                }
+                else if (isAlternate && e.ItemIndex >= 0)
+                {
+                    bgColor = GetThemeColor(BG_DARK_SECONDARY, BG_SECONDARY);
+                }
+                else
+                {
+                    bgColor = GetThemeColor(BG_DARK_PRIMARY, BG_PRIMARY);
+                }
+
+                using (var brush = new SolidBrush(bgColor))
+                {
                     e.Graphics.FillRectangle(brush, e.Bounds);
                 }
+
+                // Draw accent border on hover
+                if (isHovered && e.ColumnIndex == 0)
+                {
+                    var accentColor = GetSystemAccentColor();
+                    using var pen = new Pen(accentColor, 3);
+                    e.Graphics.DrawLine(pen, e.Bounds.Left, e.Bounds.Top, e.Bounds.Left, e.Bounds.Bottom);
+                }
+
                 e.DrawDefault = true;
             };
             
@@ -2486,13 +2720,21 @@ namespace WingetWizard
             if (progressPanel != null)
             {
                 progressPanel.Visible = true;
+
+                // Start animated progress ring
+                if (progressRing != null)
+                {
+                    progressRing.Visible = true;
+                    _progressRingTimer?.Start();
+                }
+
                 if (current == 0 && total > 0)
                 {
                     _operationStartTime = DateTime.Now;
                 }
                 _operationCurrent = current;
                 _operationTotal = total;
-                
+
                 if (total > 0)
                 {
                     // Determinate progress with percentage
@@ -2500,7 +2742,7 @@ namespace WingetWizard
                     progressBar.Maximum = total;
                     progressBar.Value = Math.Min(current, total);
                     var percentage = (int)((double)current / total * 100);
-                    
+
                     // Calculate ETA if we have timing data
                     string etaText = "";
                     if (current > 0 && _operationStartTime.HasValue)
@@ -2511,7 +2753,7 @@ namespace WingetWizard
                         var eta = TimeSpan.FromMilliseconds(remaining);
                         etaText = $" - ETA: {eta:mm\\:ss}";
                     }
-                    
+
                     statusLabel.Text = $"{message} ({current}/{total} - {percentage}%){etaText}";
                 }
                 else
@@ -2520,7 +2762,7 @@ namespace WingetWizard
                     progressBar.Style = ProgressBarStyle.Marquee;
                     statusLabel.Text = message;
                 }
-                
+
                 // Show/hide cancel button
                 if (_cancelButton != null)
                 {
@@ -2572,27 +2814,37 @@ namespace WingetWizard
                 this.Invoke(new Action(HideProgress));
                 return;
             }
-            
+
             var progressPanel = this.Controls.OfType<Panel>().FirstOrDefault(p => p.Tag?.ToString() == "progress");
             if (progressPanel != null)
             {
                 progressPanel.Visible = false;
+
+                // Stop animated progress ring
+                if (progressRing != null)
+                {
+                    _progressRingTimer?.Stop();
+                    progressRing.Visible = false;
+                }
+
                 statusLabel.Text = "Ready";
                 progressBar.Style = ProgressBarStyle.Marquee;
                 progressBar.Value = 0;
-                
+
                 if (_cancelButton != null)
                 {
                     _cancelButton.Visible = false;
                 }
             }
-            
+
             _operationStartTime = null;
             _operationCurrent = 0;
             _operationTotal = 0;
         }
         
-        // Notification system to replace MessageBox spam
+        // Modern toast notification system with slide-in animation
+        private Panel? _currentToast;
+
         private void ShowNotification(string message, NotificationType type = NotificationType.Info, int durationMs = 3000)
         {
             if (this.InvokeRequired)
@@ -2600,36 +2852,161 @@ namespace WingetWizard
                 this.Invoke(new Action(() => ShowNotification(message, type, durationMs)));
                 return;
             }
-            
-            // Use status bar for non-critical notifications
-            var color = type switch
+
+            // Update status bar as well
+            var statusColor = type switch
             {
                 NotificationType.Success => Color.FromArgb(34, 197, 94),
                 NotificationType.Warning => Color.FromArgb(245, 158, 11),
                 NotificationType.Error => Color.FromArgb(239, 68, 68),
                 _ => GetThemeColor(Color.FromArgb(100, 200, 255), Color.FromArgb(0, 120, 215))
             };
-            
-            statusLabel.ForeColor = color;
+
+            statusLabel.ForeColor = statusColor;
             statusLabel.Text = message;
             LogMessage(message);
-            
-            // Auto-clear after duration
-            if (durationMs > 0)
+
+            // Show toast for important notifications (Success, Warning, Error)
+            if (type != NotificationType.Info)
             {
-                var timer = new System.Windows.Forms.Timer { Interval = durationMs };
-                timer.Tick += (s, e) =>
-                {
-                    timer.Stop();
-                    timer.Dispose();
-                    if (statusLabel.Text == message) // Only clear if message hasn't changed
-                    {
-                        statusLabel.Text = "Ready";
-                        statusLabel.ForeColor = GetThemeColor(Color.FromArgb(100, 200, 255), Color.FromArgb(0, 120, 215));
-                    }
-                };
-                timer.Start();
+                ShowToast(message, type, durationMs);
             }
+            else
+            {
+                // Auto-clear status bar after duration for info messages
+                if (durationMs > 0)
+                {
+                    var timer = new System.Windows.Forms.Timer { Interval = durationMs };
+                    timer.Tick += (s, e) =>
+                    {
+                        timer.Stop();
+                        timer.Dispose();
+                        if (statusLabel.Text == message)
+                        {
+                            statusLabel.Text = "Ready";
+                            statusLabel.ForeColor = GetThemeColor(Color.FromArgb(100, 200, 255), Color.FromArgb(0, 120, 215));
+                        }
+                    };
+                    timer.Start();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shows a modern toast notification with slide-in animation
+        /// </summary>
+        private void ShowToast(string message, NotificationType type, int durationMs = 3000)
+        {
+            // Remove existing toast if any
+            if (_currentToast != null)
+            {
+                this.Controls.Remove(_currentToast);
+                _currentToast.Dispose();
+                _currentToast = null;
+            }
+
+            var toastColor = type switch
+            {
+                NotificationType.Success => Color.FromArgb(16, 124, 16),
+                NotificationType.Warning => Color.FromArgb(244, 156, 0),
+                NotificationType.Error => Color.FromArgb(196, 43, 28),
+                _ => Color.FromArgb(0, 120, 212)
+            };
+
+            var toastIcon = type switch
+            {
+                NotificationType.Success => "✓",
+                NotificationType.Warning => "⚠",
+                NotificationType.Error => "✕",
+                _ => "ℹ"
+            };
+
+            var toast = new Panel
+            {
+                Size = new Size(Math.Min(400, this.Width - 40), 56),
+                BackColor = toastColor,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
+
+            // Round corners
+            toast.Region = new Region(CreateRoundedRectanglePath(
+                new Rectangle(0, 0, toast.Width, toast.Height), 8));
+
+            // Icon label
+            var iconLabel = new Label
+            {
+                Text = toastIcon,
+                Font = CreateFont(16F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(16, 16),
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
+
+            // Message label
+            var messageLabel = new Label
+            {
+                Text = message.Length > 60 ? message.Substring(0, 57) + "..." : message,
+                Font = CreateFont(10.5F),
+                ForeColor = Color.White,
+                Location = new Point(48, 18),
+                MaximumSize = new Size(toast.Width - 70, 36),
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
+
+            toast.Controls.AddRange(new Control[] { iconLabel, messageLabel });
+
+            // Position off-screen initially for slide-in
+            var targetX = this.ClientSize.Width - toast.Width - 20;
+            var targetY = this.ClientSize.Height - toast.Height - 80;
+            toast.Location = new Point(targetX, this.ClientSize.Height + 10);
+
+            this.Controls.Add(toast);
+            toast.BringToFront();
+            _currentToast = toast;
+
+            // Slide-in animation
+            var slideInTimer = new System.Windows.Forms.Timer { Interval = 12 };
+            slideInTimer.Tick += (s, e) =>
+            {
+                if (toast.Top > targetY)
+                {
+                    toast.Top -= 8;
+                }
+                else
+                {
+                    toast.Top = targetY;
+                    slideInTimer.Stop();
+                    slideInTimer.Dispose();
+
+                    // Auto-hide after duration
+                    var hideTimer = new System.Windows.Forms.Timer { Interval = durationMs };
+                    hideTimer.Tick += (hs, he) =>
+                    {
+                        hideTimer.Stop();
+                        hideTimer.Dispose();
+
+                        // Slide-out animation
+                        var slideOutTimer = new System.Windows.Forms.Timer { Interval = 12 };
+                        slideOutTimer.Tick += (so, se) =>
+                        {
+                            toast.Top += 10;
+                            if (toast.Top >= this.ClientSize.Height)
+                            {
+                                slideOutTimer.Stop();
+                                slideOutTimer.Dispose();
+                                this.Controls.Remove(toast);
+                                toast.Dispose();
+                                if (_currentToast == toast) _currentToast = null;
+                            }
+                        };
+                        slideOutTimer.Start();
+                    };
+                    hideTimer.Start();
+                }
+            };
+            slideInTimer.Start();
         }
         
         private enum NotificationType

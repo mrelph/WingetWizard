@@ -54,7 +54,7 @@ namespace WingetWizard.Services
             _awsAccessKeyId = awsAccessKeyId;
             _awsSecretAccessKey = awsSecretAccessKey;
             _awsRegion = awsRegion ?? "us-east-1";
-            _bedrockModel = bedrockModel ?? AppConstants.BEDROCK_CLAUDE_35_SONNET_V2;
+            _bedrockModel = bedrockModel ?? AppConstants.BEDROCK_CLAUDE_SONNET_45;
             
             if (!string.IsNullOrEmpty(_awsAccessKeyId) && !string.IsNullOrEmpty(_awsSecretAccessKey))
             {

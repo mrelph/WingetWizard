@@ -72,11 +72,12 @@ namespace WingetWizard.Utils
         public const string AI_MODEL_CLAUDE_3_5_HAIKU = "claude-3-5-haiku-20240307";
 
         // AWS Bedrock Models (2025 Updated)
-        // Latest Claude Models
+        // Latest Claude Models - Use "us." prefix for cross-region inference
+        public const string BEDROCK_CLAUDE_SONNET_45 = "us.anthropic.claude-sonnet-4-5-20250929-v1:0";
         public const string BEDROCK_CLAUDE_37_SONNET = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
-        public const string BEDROCK_CLAUDE_SONNET_4 = "anthropic.claude-sonnet-4-20250115-v1:0";
-        public const string BEDROCK_CLAUDE_OPUS_4 = "anthropic.claude-opus-4-1-20250805-v1:0";
-        public const string BEDROCK_CLAUDE_35_SONNET_V2 = "anthropic.claude-3-5-sonnet-20241022-v2:0";
+        public const string BEDROCK_CLAUDE_SONNET_4 = "us.anthropic.claude-sonnet-4-20250514-v1:0";
+        public const string BEDROCK_CLAUDE_OPUS_4 = "us.anthropic.claude-opus-4-1-20250805-v1:0";
+        public const string BEDROCK_CLAUDE_35_SONNET_V2 = "us.anthropic.claude-3-5-sonnet-20241022-v2:0";
         
         // Stable Claude Models
         public const string BEDROCK_CLAUDE_35_SONNET = "anthropic.claude-3-5-sonnet-20240620-v1:0";
