@@ -1,6 +1,6 @@
 using System;
 
-namespace UpgradeApp.Utils
+namespace WingetWizard.Utils
 {
     /// <summary>
     /// Centralized constants for the WingetWizard application.
@@ -12,7 +12,7 @@ namespace UpgradeApp.Utils
         public const string APP_NAME = "WingetWizard";
         public const string APP_DISPLAY_NAME = "🧿 WingetWizard";
         public const string APP_SUBTITLE = "AI-Enhanced Package Manager";
-        public const string APP_VERSION = "v2.1";
+        public const string APP_VERSION = "v2.4";
 
         // Date/Time Formats
         public const string DATE_FORMAT_LOG = "yyyy-MM-dd HH:mm:ss.fff";

@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using UpgradeApp.Models;
+using WingetWizard.Models;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Services
 {
     /// <summary>
     /// Provides intelligent caching for AI recommendations and frequently accessed data.

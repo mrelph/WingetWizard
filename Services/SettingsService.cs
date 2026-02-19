@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Services
 {
     /// <summary>
     /// Service class responsible for application settings management

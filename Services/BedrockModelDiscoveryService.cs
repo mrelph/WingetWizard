@@ -6,9 +6,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using UpgradeApp.Utils;
+using WingetWizard.Utils;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Services
 {
     /// <summary>
     /// Service for dynamically discovering available AWS Bedrock models

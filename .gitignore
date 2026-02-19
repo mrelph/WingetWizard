@@ -1,4 +1,13 @@
-# Build results
+# ========================================
+# WingetWizard .gitignore
+# ========================================
+# This file protects sensitive configuration data including API keys,
+# user credentials, and other secrets from being committed to version control.
+# ========================================
+
+# ========================================
+# BUILD OUTPUTS
+# ========================================
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -13,50 +22,104 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
-
-# Visual Studio files
-.vs/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-
-# User-specific files
-*.rsuser
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
-# Build results
 *.dll
 *.exe
 *.pdb
 !publish/*.exe
 
-# NuGet Packages
+# ========================================
+# VISUAL STUDIO & DEVELOPMENT
+# ========================================
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
 *.nupkg
 packages/
 
-# Settings and sensitive data
+# ========================================
+# CONFIGURATION FILES (SENSITIVE DATA)
+# ========================================
+# Block ALL JSON files by default (may contain API keys)
+*.json
+# Allow only specific safe JSON files
+!package.json
+!package-lock.json
+!tsconfig.json
+!*.example.json
+!config.json.example
+
+# Block specific configuration files that may contain secrets
+config.json
+MarkConfig.json
 settings.json
 appsettings.json
-*.config
+secure_settings.json
+user_config.json
+secrets.json
+secrets.*.json
 
+# Block other configuration types
+*.config
+*.cfg
+*.conf
+*.ini
+*.yaml
+*.yml
+.env
+.env.local
+.env.*.local
+*.env
+
+# ========================================
+# SECURITY & CREDENTIALS
+# ========================================
+# Certificate and key files
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+
+# Test configuration (may contain real API keys)
+test_config/
+config.json.backup
+
+# ========================================
+# USER DATA & CACHE
+# ========================================
 # AI Reports (optional - remove if you want to include sample reports)
 AI_Reports/
 
-# Temporary files
+# User cache and temporary files
+*.cache
+*.cache.*
 *.tmp
 *.temp
 *.log
 
-# Windows image file caches
+# ========================================
+# WINDOWS SYSTEM FILES
+# ========================================
 Thumbs.db
 ehthumbs.db
-
-# Folder config file
 Desktop.ini
-
-# Recycle Bin used on file shares
 $RECYCLE.BIN/
+
+# ========================================
+# DISTRIBUTION & PUBLISHING
+# ========================================
+# Block distribution packages (can be regenerated)
+dist/*.zip
+dist/*.exe
+dist/*.msi
+dist/*.dmg
+dist/*.deb
+dist/*.rpm
+
+# Allow distribution source folders
+!dist/*/

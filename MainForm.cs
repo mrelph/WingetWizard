@@ -8,12 +8,11 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using UpgradeApp.Models;
-using UpgradeApp.Services;
+using WingetWizard.Models;
+using WingetWizard.Services;
+using WingetWizard.Utils;
 
-using UpgradeApp.Utils;
-
-namespace UpgradeApp
+namespace WingetWizard
 {
     /// <summary>
     /// Main application entry point for WingetWizard
@@ -54,7 +53,8 @@ namespace UpgradeApp
         private const int DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19; // Windows 10 before 20H1
         private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20; // Windows 10 20H1 and later
         
-        // UI constants
+        // Application constants
+        private const string APP_VERSION = "v2.4";
         private const int STATUS_COLUMN_INDEX = 5;
         private static readonly Color PRIMARY_BLUE = Color.FromArgb(59, 130, 246);
         // UI Controls - Modern button layout with Claude-inspired card design
@@ -70,6 +70,7 @@ namespace UpgradeApp
         private Button btnSettings = null!;
         private Button btnListAll = null!;
         private Button btnRepair = null!;
+        private Button btnSearchInstall = null!;
         private TextBox txtLogs = null!;          // Logging output with green terminal styling
         private ListView lstApps = null!;         // Package list with enhanced visualization
         private ComboBox cmbSource = null!;       // Source selection (winget, msstore, all)
@@ -77,6 +78,7 @@ namespace UpgradeApp
         // In-UI progress indicator
         private ProgressBar progressBar = null!;
         private Label statusLabel = null!;
+        private Label versionLabel = null!;
 
         private SplitContainer splitter = null!;  // Resizable layout with hidden-by-default logs
         private ToolTip buttonToolTips = null!;   // Tooltips for buttons when window is scaled down
@@ -147,10 +149,68 @@ namespace UpgradeApp
             var greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
             var userName = Environment.UserName;
 
-            // Main greeting label with WingetWizard logo and personalized message
+            // WingetWizard logo image
+            var logoImage = new PictureBox
+            {
+                Size = new Size(80, 80),
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                BackColor = Color.Transparent
+            };
+            
+            // Load the logo image
+            try
+            {
+                // Try to load from file first
+                var logoPath = Path.Combine(Application.StartupPath, "WinGetLogo.png");
+                if (File.Exists(logoPath))
+                {
+                    logoImage.Image = Image.FromFile(logoPath);
+                }
+                else
+                {
+                    // Try to load from embedded resources
+                    using var stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("WingetWizard.WinGetLogo.png");
+                    if (stream != null)
+                    {
+                        logoImage.Image = Image.FromStream(stream);
+                    }
+                    else
+                    {
+                        // Fallback: create a themed logo if resource not found
+                        var bmp = new Bitmap(80, 80);
+                        using (var g = Graphics.FromImage(bmp))
+                        {
+                            // Create a nice gradient background
+                            var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
+                                new Rectangle(0, 0, 80, 80),
+                                Color.FromArgb(100, 200, 255),
+                                Color.FromArgb(59, 130, 246),
+                                45f);
+                            g.FillEllipse(brush, 10, 10, 60, 60);
+                            g.DrawString("🧿", CreateFont(28F), Brushes.White, new PointF(18, 18));
+                            brush.Dispose();
+                        }
+                        logoImage.Image = bmp;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Logo loading failed: {ex.Message}");
+                // Create a simple fallback logo
+                var bmp = new Bitmap(80, 80);
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.FillEllipse(new SolidBrush(GetThemeColor(Color.FromArgb(100, 200, 255), Color.FromArgb(59, 130, 246))), 10, 10, 60, 60);
+                    g.DrawString("W", CreateFont(32F, FontStyle.Bold), Brushes.White, new PointF(28, 20));
+                }
+                logoImage.Image = bmp;
+            }
+
+            // Main greeting label with personalized message
             var greetingLabel = new Label
             {
-                Text = $"🧿 {greeting}, {userName}",
+                Text = $"{greeting}, {userName}",
                 Font = CreateFont(28F, FontStyle.Bold),
                 ForeColor = GetThemeColor(Color.FromArgb(100, 200, 255), Color.FromArgb(0, 120, 215)),
                 AutoSize = true,
@@ -202,7 +262,7 @@ namespace UpgradeApp
 
             var statusLabel = new Label
             {
-                Text = $"Ready • {DateTime.Now:HH:mm:ss} • WingetWizard v2.1",
+                Text = $"Ready • {DateTime.Now:HH:mm:ss} • WingetWizard {APP_VERSION}",
                 Font = CreateFont(10F, FontStyle.Regular),
                 ForeColor = GetThemeColor(Color.FromArgb(120, 120, 120), Color.FromArgb(100, 100, 100)),
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -219,10 +279,12 @@ namespace UpgradeApp
                 Anchor = AnchorStyles.None
             };
 
-            greetingLabel.Location = new Point(0, 0);
-            subtitleLabel.Location = new Point(0, 50);
-            actionsPanel.Location = new Point(0, 100);
+            logoImage.Location = new Point(0, 0);
+            greetingLabel.Location = new Point(0, 90);
+            subtitleLabel.Location = new Point(0, 130);
+            actionsPanel.Location = new Point(0, 160);
 
+            centerPanel.Controls.Add(logoImage);
             centerPanel.Controls.Add(greetingLabel);
             centerPanel.Controls.Add(subtitleLabel);
             centerPanel.Controls.Add(actionsPanel);
@@ -485,6 +547,17 @@ namespace UpgradeApp
             progressPanel.Controls.Add(progressBar);
             progressPanel.Controls.Add(statusLabel);
             progressPanel.Tag = "progress";
+            
+            // Version label in top-right corner
+            versionLabel = new Label
+            {
+                Text = APP_VERSION,
+                Font = CreateFont(10F, FontStyle.Regular),
+                ForeColor = GetThemeColor(Color.FromArgb(120, 120, 120), Color.FromArgb(100, 100, 100)),
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                BackColor = Color.Transparent
+            };
 
             var topPanel = new TableLayoutPanel { 
                 Dock = DockStyle.Top, Height = 140, ColumnCount = 9, RowCount = 2, 
@@ -522,6 +595,8 @@ namespace UpgradeApp
                 CreateButton("🗑️ Uninstall Selected", crimsonRed, "Uninstall the selected packages"),
                 CreateButton("🔧 Repair Selected", warningAmber, "Repair the selected packages"));
             
+            btnSearchInstall = CreateButton("🔍 Search & Install", Color.FromArgb(147, 51, 234), "Search for new packages and install them");
+            
             cmbSource = new() { 
                 DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill, Margin = new Padding(3),
                 BackColor = Color.FromArgb(40, 40, 40), ForeColor = Color.White, FlatStyle = FlatStyle.Flat,
@@ -544,7 +619,8 @@ namespace UpgradeApp
             topPanel.Controls.Add(btnInstall, 0, 1);
             topPanel.Controls.Add(btnUninstall, 1, 1);
             topPanel.Controls.Add(btnRepair, 2, 1);
-            topPanel.Controls.Add(cmbSource, 3, 1);
+            topPanel.Controls.Add(btnSearchInstall, 3, 1);
+            topPanel.Controls.Add(cmbSource, 4, 1);
             
             splitter = new SplitContainer { 
                 Dock = DockStyle.Fill, Orientation = Orientation.Vertical, 
@@ -597,14 +673,17 @@ namespace UpgradeApp
             this.Controls.Add(topPanel);
             this.Controls.Add(progressPanel);
             this.Controls.Add(headerPanel);
+            this.Controls.Add(versionLabel);
             
             var handlers = new (Button btn, EventHandler handler)[] {
                 (btnCheck, BtnCheck_Click), (btnUpgrade, BtnUpgrade_Click), (btnUpgradeAll, BtnUpgradeAll_Click),
                 (btnListAll, BtnListAll_Click), (btnInstall, BtnInstall_Click), (btnUninstall, BtnUninstall_Click),
                 (btnRepair, BtnRepair_Click), (btnResearch, BtnResearch_Click), (btnLogs, BtnLogs_Click), 
-                (btnExport, ExportUpgradeList), (btnHelp, ShowHelpMenu), (btnSettings, ShowSettingsMenu)
+                (btnExport, ExportUpgradeList), (btnHelp, ShowHelpMenu), (btnSettings, ShowSettingsMenu),
+                (btnSearchInstall, BtnSearchInstall_Click)
             };
             foreach (var (btn, handler) in handlers) btn.Click += handler;
+            
             this.Resize += MainForm_Resize;
             this.HandleCreated += (s, e) => EnableDarkModeChrome(isDarkMode);
             UpdateUIMode();
@@ -1125,6 +1204,12 @@ namespace UpgradeApp
                     columns[i].Width = (int)(totalWidth * widths[i] / totalPercentage);
                 }
             }
+            
+            // Position version label in top-right corner
+            if (versionLabel != null)
+            {
+                versionLabel.Location = new Point(this.Width - versionLabel.Width - 15, 10);
+            }
         }
 
         private void UpdateUIMode()
@@ -1400,11 +1485,12 @@ namespace UpgradeApp
             
             var aboutText = new RichTextBox
             {
-                Text = @"🧿 WingetWizard v2.1
+                Text = $@"🧿 WingetWizard {APP_VERSION}
 
-AI-Enhanced Windows Package Manager
+AI-Enhanced Windows Package Manager with Search & Discovery
 
 Key Features:
+• 🔍 Professional package search and installation
 • Native OS theme integration (dark/light mode)
 • Dark mode window chrome (title bar, buttons)
 • Two-stage AI analysis (Perplexity + Claude)
@@ -1459,19 +1545,40 @@ Built with .NET 6, Windows Forms, and native OS integration",
 
 Getting Started:
 1. Use 'List All Apps' to see installed packages
-2. Use 'Check Updates' to find available upgrades
-3. Select packages and use 'AI Research' for comprehensive analysis
-4. Use 'Upgrade Selected' or 'Upgrade All' to update packages
+2. Use 'Check Updates' to find available upgrades  
+3. 🔍 Use 'Search & Install' to find and install new software
+4. Select packages and use 'AI Research' for comprehensive analysis
+5. Use 'Upgrade Selected' or 'Upgrade All' to update packages
+
+🔍 Package Search & Installation:
+• Click '🔍 Search & Install' to open the search dialog
+• Enter package names (e.g., 'vscode', 'chrome', 'python')
+• Press Enter or click 'Search' to find packages
+• Use checkboxes to select packages for installation
+• Click 'Install Selected' to install chosen packages
+
+Popular Search Terms:
+• Development: vscode, git, python, nodejs, docker
+• Browsers: chrome, firefox, edge, brave
+• Media: vlc, spotify, discord, zoom  
+• Utilities: 7zip, notepad++, winrar, putty
+
+Search Tips:
+• Use simple terms: 'vscode' works better than full names
+• Try variations: 'chrome', 'google chrome', or 'chromium'
+• Results show source information (winget, msstore)
+• Use 'Select All' for quick selection of all results
 
 Key Features:
+• Professional search interface for package discovery and installation
 • Native OS theme integration (automatic dark/light mode)
 • Dark mode window chrome (title bar, minimize/maximize/close)
 • Configurable primary/fallback LLM providers (Anthropic Claude or AWS Bedrock)
 • Two-stage AI analysis (Perplexity + Primary LLM)
-• Comprehensive application information
+• Comprehensive application information and AI-generated reports
 • Individual package reports with full context
 • Auto-sizing columns and responsive design
-• Multiple package sources (winget, msstore)
+• Multiple package sources (winget, msstore, combined)
 
 AI Configuration:
 • Choose between Anthropic Claude Direct API or AWS Bedrock as primary LLM
@@ -1989,7 +2096,7 @@ Progress Tracking:
             }
             
             // Auto-load on credentials change (with debouncing)
-            System.Windows.Forms.Timer debounceTimer = null;
+            System.Windows.Forms.Timer? debounceTimer = null;
             
             void ScheduleModelLoad()
             {
@@ -1998,17 +2105,19 @@ Progress Tracking:
                 debounceTimer.Tick += (s, e) =>
                 {
                     debounceTimer.Stop();
-                    Task.Run(async () =>
+                    #pragma warning disable CS4014 // Intentionally fire-and-forget
+                Task.Run(async () =>
+                {
+                    try
                     {
-                        try
-                        {
-                            await LoadBedrockModels();
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Error in scheduled model load: {ex.Message}");
-                        }
-                    });
+                        await LoadBedrockModels();
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error in scheduled model load: {ex.Message}");
+                    }
+                });
+#pragma warning restore CS4014
                 };
                 debounceTimer.Start();
             }
@@ -2138,11 +2247,13 @@ Progress Tracking:
             
             if (hasBedrockApiKey || hasAwsCredentials)
             {
+#pragma warning disable CS4014 // Intentionally fire-and-forget
                 Task.Run(async () =>
                 {
                     await Task.Delay(100);
                     aiForm.Invoke(async () => await LoadBedrockModels());
                 });
+#pragma warning restore CS4014
             }
             else
             {
@@ -2223,7 +2334,7 @@ Progress Tracking:
                 FlatStyle = FlatStyle.Flat
             };
             
-            testButton.Click += async (s, e) =>
+            testButton.Click += (s, e) =>
             {
                 testButton.Enabled = false;
                 testButton.Text = "Testing...";
@@ -2985,6 +3096,548 @@ Progress Tracking:
             public override Color MenuItemPressedGradientBegin => _isDarkMode ? Color.FromArgb(40, 40, 40) : Color.FromArgb(230, 230, 230);
             public override Color MenuItemPressedGradientEnd => _isDarkMode ? Color.FromArgb(40, 40, 40) : Color.FromArgb(230, 230, 230);
             public override Color ToolStripDropDownBackground => _isDarkMode ? Color.FromArgb(25, 25, 25) : Color.White;
+        }
+
+        /// <summary>
+        /// Handles the search and install button click
+        /// Opens a new dialog for package search and installation
+        /// </summary>
+        private void BtnSearchInstall_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("Search button clicked - opening search dialog");
+                ShowSearchInstallDialog();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error opening search dialog: {ex.Message}");
+                MessageBox.Show($"Error opening search dialog: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Shows the search and install dialog
+        /// </summary>
+        private void ShowSearchInstallDialog()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("ShowSearchInstallDialog called - creating form");
+                
+                var searchForm = new Form
+                {
+                    Text = "🔍 Search & Install Packages",
+                    Size = new Size(900, 650),
+                    MinimumSize = new Size(700, 400),
+                    StartPosition = FormStartPosition.CenterParent,
+                    FormBorderStyle = FormBorderStyle.Sizable,
+                    MaximizeBox = true,
+                    MinimizeBox = false
+                };
+                
+                ApplyThemeToForm(searchForm);
+                
+                // Create simplified main layout
+                var mainPanel = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 1,
+                    RowCount = 3,
+                    Padding = new Padding(15),
+                    RowStyles = 
+                    {
+                        new RowStyle(SizeType.Absolute, 60),   // Search controls
+                        new RowStyle(SizeType.Percent, 100),   // Results list
+                        new RowStyle(SizeType.Absolute, 50)    // Action buttons
+                    }
+                };
+            
+            // Simplified search controls
+            var searchPanel = new Panel { Dock = DockStyle.Fill };
+            
+            var searchBox = new TextBox
+            {
+                Size = new Size(500, 30),
+                Font = CreateFont(12F),
+                Location = new Point(0, 15),
+                PlaceholderText = "Search for packages... (e.g., vscode, chrome, git, python)"
+            };
+            
+            var searchButton = new Button
+            {
+                Text = "🔍 Search",
+                Size = new Size(120, 30),
+                Font = CreateFont(12F),
+                Location = new Point(520, 15),
+                BackColor = GetThemeColor(Color.FromArgb(59, 130, 246), Color.FromArgb(59, 130, 246)),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            
+            var resultsCountLabel = new Label
+            {
+                Text = "Enter a search term to find packages",
+                Font = CreateFont(10F),
+                ForeColor = GetThemeColor(Color.FromArgb(150, 150, 150), Color.FromArgb(100, 100, 100)),
+                AutoSize = true,
+                Location = new Point(650, 22)
+            };
+            
+            // Add a status bar below the results for better user feedback
+            var statusBar = new Panel
+            {
+                Height = 25,
+                Dock = DockStyle.Bottom,
+                BackColor = GetThemeColor(Color.FromArgb(30, 30, 30), Color.FromArgb(245, 245, 245))
+            };
+            
+            var statusLabel = new Label
+            {
+                Text = "Ready to search",
+                Font = CreateFont(8F),
+                ForeColor = GetThemeColor(Color.FromArgb(156, 163, 175), Color.FromArgb(107, 114, 128)),
+                AutoSize = true,
+                Location = new Point(10, 5)
+            };
+            
+            statusBar.Controls.Add(statusLabel);
+            
+            searchPanel.Controls.AddRange(new Control[] { searchBox, searchButton, resultsCountLabel });
+            
+            // Enhanced results list with main app styling
+            var resultsList = new ListView
+            {
+                Dock = DockStyle.Fill,
+                View = View.Details,
+                FullRowSelect = true,
+                GridLines = false, // Match main app (no grid lines)
+                CheckBoxes = true,
+                MultiSelect = true,
+                Font = CreateFont(10F),
+                BackColor = GetThemeColor(Color.FromArgb(15, 15, 15), Color.White), // Match main app background
+                ForeColor = GetThemeColor(Color.FromArgb(230, 230, 230), Color.Black),
+                BorderStyle = BorderStyle.None, // Match main app
+                HeaderStyle = ColumnHeaderStyle.Nonclickable // Match main app
+            };
+            
+            // Columns matching main app style (optimized for search)
+            string[] searchColumns = { "Name:320", "ID:220", "Version:120", "Source:90" };
+            foreach (var col in searchColumns) 
+            { 
+                var parts = col.Split(':'); 
+                var column = new ColumnHeader { Text = parts[0], Width = int.Parse(parts[1]) };
+                resultsList.Columns.Add(column);
+            }
+            
+            // Add resize handler to auto-adjust Name column
+            searchForm.Resize += (s, e) =>
+            {
+                if (resultsList.Columns.Count > 0)
+                {
+                    // Calculate available width for Name column (total width - other columns - padding)
+                    var otherColumnsWidth = resultsList.Columns[1].Width + resultsList.Columns[2].Width + resultsList.Columns[3].Width;
+                    var availableWidth = resultsList.ClientSize.Width - otherColumnsWidth - 40; // 40px padding
+                    resultsList.Columns[0].Width = Math.Max(200, availableWidth); // Minimum 200px for Name column
+                }
+            };
+            
+            // Apply theme to match main app styling
+            ApplyThemeToControl(resultsList);
+            
+            // Simplified action buttons
+            var actionPanel = new Panel { Dock = DockStyle.Fill };
+            
+            var installButton = new Button
+            {
+                Text = "📦 Install Selected",
+                Size = new Size(150, 35),
+                Font = CreateFont(11F),
+                Location = new Point(0, 10),
+                BackColor = GetThemeColor(Color.FromArgb(34, 197, 94), Color.FromArgb(34, 197, 94)),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Enabled = false
+            };
+            
+            var selectAllButton = new Button
+            {
+                Text = "Select All",
+                Size = new Size(100, 35),
+                Font = CreateFont(11F),
+                Location = new Point(170, 10),
+                BackColor = GetThemeColor(Color.FromArgb(59, 130, 246), Color.FromArgb(59, 130, 246)),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            
+            var deselectAllButton = new Button
+            {
+                Text = "Deselect All",
+                Size = new Size(100, 35),
+                Font = CreateFont(11F),
+                Location = new Point(280, 10),
+                BackColor = GetThemeColor(Color.FromArgb(107, 114, 128), Color.FromArgb(107, 114, 128)),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            
+            actionPanel.Controls.AddRange(new Control[] { installButton, selectAllButton, deselectAllButton });
+            
+            // Add panels to simplified layout
+            mainPanel.Controls.Add(searchPanel, 0, 0);
+            mainPanel.Controls.Add(resultsList, 0, 1);
+            mainPanel.Controls.Add(actionPanel, 0, 2);
+            
+            // Add status bar to the form for better user feedback
+            searchForm.Controls.Add(statusBar);
+            
+            // Event handlers with improved functionality
+            searchButton.Click += async (s, e) =>
+            {
+                if (string.IsNullOrWhiteSpace(searchBox.Text.Trim()))
+                {
+                    MessageBox.Show("Please enter a search term.", "Search Required", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    searchBox.Focus();
+                    return;
+                }
+                
+                searchButton.Enabled = false;
+                searchButton.Text = "🔍 Searching...";
+                resultsCountLabel.Text = "Searching...";
+                statusLabel.Text = $"Searching for '{searchBox.Text.Trim()}'...";
+                
+                try
+                {
+                    var searchTerm = searchBox.Text.Trim();
+                    var results = await _packageService.SearchPackagesAsync(searchTerm, null, 100, false, verboseLogging);
+                    
+                    PopulateSearchResults(resultsList, results);
+                    resultsCountLabel.Text = $"Found {results.Count} package(s)";
+                    installButton.Enabled = results.Count > 0;
+                    
+                    if (results.Count == 0)
+                    {
+                        resultsCountLabel.Text = "No packages found. Try a different search term.";
+                        statusLabel.Text = "No packages found. Try a different search term.";
+                    }
+                    else
+                    {
+                        statusLabel.Text = $"Search completed. Found {results.Count} package(s).";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Search failed: {ex.Message}\n\nTry checking your internet connection and winget installation.", 
+                        "Search Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    resultsCountLabel.Text = "Search failed";
+                    statusLabel.Text = $"Search failed: {ex.Message}";
+                }
+                finally
+                {
+                    searchButton.Enabled = true;
+                    searchButton.Text = "🔍 Search";
+                }
+            };
+            
+            // Enter key in search box triggers search
+            searchBox.KeyPress += (s, e) =>
+            {
+                if (e.KeyChar == (char)Keys.Enter)
+                {
+                    e.Handled = true;
+                    searchButton.PerformClick();
+                }
+            };
+            
+            selectAllButton.Click += (s, e) =>
+            {
+                foreach (ListViewItem item in resultsList.Items)
+                {
+                    item.Checked = true;
+                }
+                UpdateInstallButtonState();
+            };
+            
+            deselectAllButton.Click += (s, e) =>
+            {
+                foreach (ListViewItem item in resultsList.Items)
+                {
+                    item.Checked = false;
+                }
+                UpdateInstallButtonState();
+            };
+            
+            installButton.Click += async (s, e) =>
+            {
+                var selectedPackages = new List<string>();
+                foreach (ListViewItem item in resultsList.Items)
+                {
+                    if (item.Checked)
+                    {
+                        selectedPackages.Add(item.SubItems[1].Text); // ID column
+                    }
+                }
+                
+                if (selectedPackages.Count == 0)
+                {
+                    MessageBox.Show("Please select packages to install.", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                
+                var result = MessageBox.Show(
+                    $"Install {selectedPackages.Count} selected package(s)?\n\nThis may take several minutes depending on package sizes.",
+                    "Confirm Installation",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+                
+                if (result == DialogResult.Yes)
+                {
+                    installButton.Enabled = false;
+                    installButton.Text = "📦 Installing...";
+                    
+                    try
+                    {
+                        var installResult = await _packageService.InstallMultiplePackagesAsync(selectedPackages, verboseLogging);
+                        if (installResult.Success)
+                        {
+                            MessageBox.Show($"Installation completed successfully!\n\nInstalled {selectedPackages.Count} package(s).", 
+                                "Installation Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            // Refresh the list to show updated status
+                            searchButton.PerformClick();
+                        }
+                        else
+                        {
+                            MessageBox.Show($"Installation failed: {installResult.Message}", "Installation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Installation failed: {ex.Message}", "Installation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    finally
+                    {
+                        installButton.Enabled = true;
+                        installButton.Text = "📦 Install Selected";
+                    }
+                }
+            };
+            
+            
+            // Helper function to update install button state
+            void UpdateInstallButtonState()
+            {
+                var hasSelection = resultsList.Items.Cast<ListViewItem>().Any(item => item.Checked);
+                installButton.Enabled = hasSelection;
+            }
+            
+            // Update install button state when checkboxes change
+            resultsList.ItemChecked += (s, e) => UpdateInstallButtonState();
+            
+            // Double-click to view package details
+            resultsList.DoubleClick += (s, e) =>
+            {
+                if (resultsList.SelectedItems.Count > 0)
+                {
+                    var selectedItem = resultsList.SelectedItems[0];
+                    var packageId = selectedItem.SubItems[1].Text;
+                    ShowPackageDetails(packageId);
+                }
+            };
+            
+            searchForm.Controls.Add(mainPanel);
+            System.Diagnostics.Debug.WriteLine("Search dialog form created successfully - showing dialog");
+            searchForm.ShowDialog(this);
+            System.Diagnostics.Debug.WriteLine("Search dialog closed");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in ShowSearchInstallDialog: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+            MessageBox.Show($"Error creating search dialog: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+        
+        /// <summary>
+        /// Populates the search results list view
+        /// </summary>
+        private void PopulateSearchResults(ListView listView, List<PackageSearchResult> results)
+        {
+            System.Diagnostics.Debug.WriteLine("=== POPULATE SEARCH RESULTS DEBUG ===");
+            System.Diagnostics.Debug.WriteLine($"Received {results.Count} results to display");
+            
+            listView.Items.Clear();
+            
+            for (int i = 0; i < results.Count; i++)
+            {
+                var result = results[i];
+                System.Diagnostics.Debug.WriteLine($"Processing result {i}: Name='{result.Name}', ID='{result.Id}', Version='{result.Version}', Source='{result.Source}'");
+                
+                var item = new ListViewItem(result.Name);
+                item.SubItems.Add(result.Id);
+                item.SubItems.Add(result.Version);
+                item.SubItems.Add(result.Source);
+                
+                // Store the package result in the item's tag for reference
+                item.Tag = result;
+                
+                listView.Items.Add(item);
+                System.Diagnostics.Debug.WriteLine($"Added ListView item {i}: {item.Text} with color {item.BackColor}");
+            }
+            
+            System.Diagnostics.Debug.WriteLine($"ListView now contains {listView.Items.Count} items");
+            System.Diagnostics.Debug.WriteLine($"ListView columns: {listView.Columns.Count}");
+            foreach (ColumnHeader col in listView.Columns)
+            {
+                System.Diagnostics.Debug.WriteLine($"Column: {col.Text}, Width: {col.Width}");
+            }
+            
+            // Force refresh to show the new items and colors
+            listView.Refresh();
+            
+            // Log completion for debugging
+            if (results.Count == 0)
+            {
+                System.Diagnostics.Debug.WriteLine("No search results to display");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"Successfully populated {results.Count} search results");
+            }
+        }
+        
+        /// <summary>
+        /// Filters search results based on user input
+        /// </summary>
+        private List<ListViewItem> FilterSearchResults(ListView listView, string filterText, string filterType)
+        {
+            var filteredItems = new List<ListViewItem>();
+            var filterLower = filterText.ToLowerInvariant();
+            
+            foreach (ListViewItem item in listView.Items)
+            {
+                bool shouldInclude = false;
+                
+                switch (filterType.ToLowerInvariant())
+                {
+                    case "name":
+                        shouldInclude = item.SubItems[0].Text.ToLowerInvariant().Contains(filterLower);
+                        break;
+                    case "id":
+                        shouldInclude = item.SubItems[1].Text.ToLowerInvariant().Contains(filterLower);
+                        break;
+                    case "publisher":
+                        shouldInclude = item.SubItems[3].Text.ToLowerInvariant().Contains(filterLower);
+                        break;
+                    case "tags":
+                        // For tags, we'd need to store them in the tag property or add a tags column
+                        shouldInclude = item.SubItems[0].Text.ToLowerInvariant().Contains(filterLower) ||
+                                      item.SubItems[1].Text.ToLowerInvariant().Contains(filterLower);
+                        break;
+                    default:
+                        shouldInclude = true;
+                        break;
+                }
+                
+                if (shouldInclude)
+                {
+                    filteredItems.Add(item);
+                }
+            }
+            
+            return filteredItems;
+        }
+        
+        /// <summary>
+        /// Updates the ListView with filtered results
+        /// </summary>
+        private void UpdateFilteredResults(ListView listView, List<ListViewItem> filteredItems)
+        {
+            listView.Items.Clear();
+            foreach (var item in filteredItems)
+            {
+                listView.Items.Add(item);
+            }
+        }
+        
+        /// <summary>
+        /// Sorts search results based on user selection
+        /// </summary>
+        private List<ListViewItem> SortSearchResults(ListView listView, string sortBy, bool ascending)
+        {
+            var items = listView.Items.Cast<ListViewItem>().ToList();
+            
+            switch (sortBy.ToLowerInvariant())
+            {
+                case "name":
+                    return ascending ? 
+                        items.OrderBy(item => item.SubItems[0].Text).ToList() : 
+                        items.OrderByDescending(item => item.SubItems[0].Text).ToList();
+                case "version":
+                    return ascending ? 
+                        items.OrderBy(item => item.SubItems[2].Text).ToList() : 
+                        items.OrderByDescending(item => item.SubItems[2].Text).ToList();
+                case "publisher":
+                    return ascending ? 
+                        items.OrderBy(item => item.SubItems[3].Text).ToList() : 
+                        items.OrderByDescending(item => item.SubItems[3].Text).ToList();
+                default:
+                    return ascending ? 
+                        items.OrderBy(item => item.SubItems[0].Text).ToList() : 
+                        items.OrderByDescending(item => item.SubItems[0].Text).ToList();
+            }
+        }
+        
+        /// <summary>
+        /// Shows detailed information about a selected package
+        /// </summary>
+        private async void ShowPackageDetails(string packageId)
+        {
+            try
+            {
+                var details = await _packageService.GetPackageDetailsAsync(packageId, verboseLogging);
+                if (details != null)
+                {
+                    var detailsForm = new Form
+                    {
+                        Text = $"📦 Package Details: {details.Name}",
+                        Size = new Size(600, 500),
+                        StartPosition = FormStartPosition.CenterParent,
+                        FormBorderStyle = FormBorderStyle.FixedDialog,
+                        MaximizeBox = false,
+                        MinimizeBox = false
+                    };
+                    
+                    ApplyThemeToForm(detailsForm);
+                    
+                    var detailsPanel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20) };
+                    var detailsText = new TextBox
+                    {
+                        Multiline = true,
+                        ReadOnly = true,
+                        ScrollBars = ScrollBars.Vertical,
+                        Dock = DockStyle.Fill,
+                        Font = CreateFont(10F),
+                        Text = $"Name: {details.Name}\n" +
+                               $"ID: {details.Id}\n" +
+                               $"Version: {details.Version}\n" +
+                               $"Publisher: {details.Publisher}\n" +
+                               $"Description: {details.Description}\n" +
+                               $"Homepage: {details.Homepage}\n" +
+                               $"License: {details.License}\n" +
+                               $"Tags: {details.Tags}\n" +
+                               $"Source: {details.Source}"
+                    };
+                    
+                    detailsPanel.Controls.Add(detailsText);
+                    detailsForm.Controls.Add(detailsPanel);
+                    detailsForm.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to get package details: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

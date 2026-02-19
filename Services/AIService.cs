@@ -5,10 +5,10 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using UpgradeApp.Models;
-using UpgradeApp.Utils;
+using WingetWizard.Models;
+using WingetWizard.Utils;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Services
 {
     /// <summary>
     /// Service class responsible for AI-powered package recommendations
@@ -105,7 +105,7 @@ namespace UpgradeApp.Services
             };
             
             System.Diagnostics.Debug.WriteLine($"[AIService] AI recommendation completed for {app.Name}. Result length: {result?.Length ?? 0}");
-            return result;
+            return result ?? "AI analysis failed - no result generated";
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace UpgradeApp.Services
                 "Claude");
             
             System.Diagnostics.Debug.WriteLine($"[AIService] [Claude] Claude API request completed. Response length: {result?.Length ?? 0}");
-            return result;
+            return result ?? "Claude API request failed - no response generated";
         }
 
         /// <summary>
@@ -311,7 +311,7 @@ namespace UpgradeApp.Services
                 "Perplexity");
             
             System.Diagnostics.Debug.WriteLine($"[AIService] [Perplexity] Perplexity API request completed. Response length: {result?.Length ?? 0}");
-            return result;
+            return result ?? "Perplexity API request failed - no response generated";
         }
 
         /// <summary>
@@ -398,7 +398,7 @@ namespace UpgradeApp.Services
                                 var result = JsonSerializer.Deserialize<JsonElement>(responseContent);
                                 var parsedResult = responseParser(result);
                                 System.Diagnostics.Debug.WriteLine($"[AIService] [HTTP] [{providerName}] Attempt {attempt + 1}: Response parsed successfully. Parsed length: {parsedResult?.Length ?? 0}");
-                                return parsedResult;
+                                return parsedResult ?? $"{providerName} response parsing returned null";
                             }
                             catch (Exception parseEx)
                             {

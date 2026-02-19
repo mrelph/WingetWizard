@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace UpgradeApp.Utils
+namespace WingetWizard.Utils
 {
     /// <summary>
     /// Provides comprehensive input validation and sanitization utilities.

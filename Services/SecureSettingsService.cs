@@ -6,9 +6,9 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using UpgradeApp.Utils;
+using WingetWizard.Utils;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Services
 {
     public class SecureSettingsService
     {

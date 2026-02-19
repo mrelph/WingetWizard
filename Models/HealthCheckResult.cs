@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UpgradeApp.Models
+namespace WingetWizard.Models
 {
     /// <summary>
     /// Represents the result of a comprehensive health check operation.

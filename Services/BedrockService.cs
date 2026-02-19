@@ -6,11 +6,11 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Globalization;
-using UpgradeApp.Models;
-using UpgradeApp.Utils;
+using WingetWizard.Models;
+using WingetWizard.Utils;
 using System.Linq; // Added for Count()
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Services
 {
     /// <summary>
     /// Service class for AWS Bedrock integration with multiple model support
@@ -133,7 +133,7 @@ namespace UpgradeApp.Services
                 System.Diagnostics.Debug.WriteLine($"[BedrockService] Response received. Length: {response?.Length ?? 0} characters");
                 System.Diagnostics.Debug.WriteLine($"[BedrockService] Bedrock AI recommendation generated successfully - Model: {_selectedModel}, Package: {app.Id}");
 
-                return response;
+                return response ?? "Bedrock AI analysis failed - no response generated";
             }
             catch (Exception ex)
             {
@@ -329,7 +329,7 @@ Focus on security, stability, and practical business impact. Be specific about r
                 System.Diagnostics.Debug.WriteLine($"[BedrockService] [HTTP] Success! Parsing Bedrock response...");
                 var parsedResponse = ParseBedrockResponse(responseContent);
                 System.Diagnostics.Debug.WriteLine($"[BedrockService] [HTTP] Response parsed successfully. Parsed length: {parsedResponse?.Length ?? 0}");
-                return parsedResponse;
+                return parsedResponse ?? "Bedrock API response parsing failed - no content generated";
             }
 
             var error = $"Bedrock API Error {response.StatusCode}: {responseContent}";

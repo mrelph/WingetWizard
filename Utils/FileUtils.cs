@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace UpgradeApp.Utils
+namespace WingetWizard.Utils
 {
     /// <summary>
     /// Utility class for file operations and common file-related tasks

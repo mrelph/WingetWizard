@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UpgradeApp.Utils;
+using WingetWizard.Utils;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Services
 {
     /// <summary>
     /// Provides comprehensive configuration validation for the WingetWizard application.

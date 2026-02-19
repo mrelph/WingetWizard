@@ -6,9 +6,9 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using UpgradeApp.Models;
+using WingetWizard.Models;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Services
 {
     /// <summary>
     /// Provides comprehensive health check functionality for the WingetWizard application.

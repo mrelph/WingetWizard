@@ -23,21 +23,26 @@ WingetWizard is a beautifully designed, Claude-inspired Windows desktop applicat
 ├─────────────────────────────────────────────────────────────┤
 │  UI Layer (Windows Forms)                                  │
 │  ├── MainForm.cs (Primary Interface with Service DI)       │
-│  ├── MainForm.cs (Modern UI with Service Integration)      │
 │  └── Settings Dialogs (AI/UI Configuration)                │
 ├─────────────────────────────────────────────────────────────┤
 │  Models Layer                                              │
 │  └── UpgradableApp.cs (Package Data Model)                 │
 ├─────────────────────────────────────────────────────────────┤
 │  Services Layer (Business Logic)                           │
-│  ├── PackageService.cs (Secure Winget Operations)          │
+│  ├── PackageService.cs (Secure Winget Operations + Search) │
+│  ├── PackageDiscoveryService.cs (Package Search & Install) │
 │  ├── AIService.cs (Claude + Perplexity Integration)        │
+│  ├── BedrockService.cs (AWS Bedrock Integration)           │
+│  ├── BedrockModelDiscoveryService.cs (Model Discovery)     │
 │  ├── ReportService.cs (AI Report Management)               │
 │  ├── SettingsService.cs (Configuration Management)         │
 │  ├── SecureSettingsService.cs (DPAPI Encryption)           │
-│  ├── EnhancedLoggingService.cs (Security Audit Logging)    │
+│  ├── HealthCheckService.cs (System Health Monitoring)      │
 │  ├── PerformanceMetricsService.cs (System Monitoring)      │
-│  └── CachingService.cs (Multi-Tier Caching)                │
+│  ├── ConfigurationValidationService.cs (Settings Validation)│
+│  ├── CachingService.cs (Multi-Tier Caching)                │
+│  ├── SearchFilterService.cs (Advanced Search & Filtering)  │
+│  └── VirtualizationService.cs (Large Dataset Handling)     │
 ├─────────────────────────────────────────────────────────────┤
 │  Utilities Layer                                           │
 │  ├── FileUtils.cs (Safe File Operations & Helpers)         │
@@ -48,6 +53,7 @@ WingetWizard is a beautifully designed, Claude-inspired Windows desktop applicat
 │  ├── Windows Package Manager (winget)                      │
 │  ├── Anthropic Claude API (Knowledge-based AI)             │
 │  ├── Perplexity API (Real-time Web Research)               │
+│  ├── AWS Bedrock (Enterprise AI Platform)                  │
 │  └── PowerShell Execution Engine                           │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -82,7 +88,7 @@ public MainForm()
 
 ### Technology Stack
 
-- **Framework**: .NET 6 Windows Forms with modern UI enhancements
+- **Framework**: .NET 6.0 Windows Forms with modern UI enhancements
 - **Architecture**: Modular service-based design with dependency injection
 - **Design Language**: Claude AI-inspired interface with sophisticated color palette
 - **Typography**: Calibri font family with intelligent fallback system (Calibri → Segoe UI → Generic Sans)
@@ -154,6 +160,12 @@ private async Task<string> GetAIRecommendation(UpgradableApp app)
 - **Strengths**: Current information, official documentation access
 - **Use Case**: Latest release notes, security advisories, community feedback
 
+#### AWS Bedrock Integration (Enterprise)
+- **Models**: Claude 3.7 Sonnet, Claude Sonnet 4, Claude Opus 4, Llama 3.3 70B
+- **Approach**: Enterprise-grade AI platform with multiple model options
+- **Strengths**: High performance, enterprise security, model variety
+- **Use Case**: Production AI workloads and enterprise deployments
+
 ### Modern UI Architecture
 
 #### Claude-Inspired Design System
@@ -162,8 +174,6 @@ private async Task<string> GetAIRecommendation(UpgradableApp app)
 - **Smart Visibility**: Dynamic welcome screen that appears when empty and hides when content loads
 - **Typography Hierarchy**: Modern Calibri fonts with sizes from 9pt to 26pt for clear visual organization
 - **Card-Based Actions**: Elegant button spacing with subtle borders and sophisticated hover effects
-
-
 
 #### Rich Text Rendering System
 - **Color-Coded Content**: Semantic colors for different types of information (🟢🟡🔴🟣)
@@ -184,6 +194,7 @@ private async Task<string> GetAIRecommendation(UpgradableApp app)
 ### 📦 Package Operations
 - ✅ **🔄 Check Updates**: Automated scanning for available package updates
 - ✅ **📋 List All Apps**: Complete inventory of installed software with details
+- ✅ **🔍 Search & Install**: Professional package search and installation interface
 - ✅ **📦 Upgrade Selected**: Update only checked packages individually
 - ✅ **🚀 Upgrade All**: Update all available packages at once
 - ✅ **📦 Install Selected**: Install new packages from checked items
@@ -191,6 +202,16 @@ private async Task<string> GetAIRecommendation(UpgradableApp app)
 - ✅ **🔧 Repair Selected**: Fix corrupted or problematic installations
 - ✅ **Source Management**: Support for winget, msstore, and all sources
 - ✅ **Verbose Logging**: Detailed command output for troubleshooting
+
+### 🔍 Package Search & Discovery
+- ✅ **Professional Search Interface**: Modern, responsive dialog matching main application design
+- ✅ **Intelligent Parsing**: Robust winget output parsing with header/separator detection
+- ✅ **Multi-Package Selection**: Checkbox-based selection with Select All/Deselect All
+- ✅ **Batch Installation**: Install multiple packages simultaneously with progress tracking
+- ✅ **Source Identification**: Clear indication of package sources (winget, msstore, etc.)
+- ✅ **Responsive Design**: Dynamic column sizing and window resizing support
+- ✅ **Fast Performance**: 2-5 second search with efficient result parsing
+- ✅ **Error Handling**: Comprehensive error recovery and user feedback
 
 ### 🤖 Enhanced AI-Powered Features
 - 🧠 **Enhanced AI Prompting**: Comprehensive structured prompts with specific formatting instructions and emoji indicators
@@ -207,7 +228,7 @@ private async Task<string> GetAIRecommendation(UpgradableApp app)
   - 📅 **Timeline Recommendations** with urgency levels
   - 🎯 **Action Items** with checklist format
 - 📤 **Professional Export**: Auto-generated filenames with timestamps, metadata, and executive summaries
-- 🔍 **Dual AI Providers**: Claude AI (knowledge-based) and Perplexity (real-time research)
+- 🔍 **Multi AI Providers**: Claude AI (knowledge-based), Perplexity (real-time research), AWS Bedrock (enterprise)
 - 🎨 **Visual Indicators**: Emoji-based risk levels and recommendation types throughout interface
 - 📈 **Progress Tracking**: In-UI progress bar with real-time package analysis status
 - 💾 **Rich Text Display**: Color-coded reports with sophisticated typography and formatting
@@ -378,7 +399,7 @@ private static readonly Regex DangerousPatternRegex = new(
 ### Development Environment
 ```bash
 # Prerequisites
-- .NET 6 SDK
+- .NET 6.0 SDK
 - Windows 10/11
 - Visual Studio 2022 or VS Code
 - Git for version control
@@ -405,43 +426,50 @@ dotnet run
   <OutputType>WinExe</OutputType>
   <TargetFramework>net6.0-windows</TargetFramework>
   <UseWindowsForms>true</UseWindowsForms>
-  <PublishSingleFile>true</PublishSingleFile>
-  <SelfContained>true</SelfContained>
-  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <Nullable>enable</Nullable>
+  <ImplicitUsings>enable</ImplicitUsings>
+  <EnableWindowsTargeting>true</EnableWindowsTargeting>
 </PropertyGroup>
 ```
 
 ## 📁 Project Structure
 
 ```
-UpgradeApp/
+WingetWizard/
 ├── MainForm.cs             # Modern UI with service integration
 ├── Models/                 # Data models and entities
 │   └── UpgradableApp.cs    # Package data model
 ├── Services/               # Business logic services
 │   ├── PackageService.cs       # Secure package management operations
 │   ├── AIService.cs            # AI integration and recommendations
+│   ├── BedrockService.cs       # AWS Bedrock integration
+│   ├── BedrockModelDiscoveryService.cs # Dynamic model discovery
 │   ├── ReportService.cs        # AI report management
 │   ├── SettingsService.cs      # Configuration and API keys
 │   ├── SecureSettingsService.cs # DPAPI-encrypted credential storage
-│   ├── EnhancedLoggingService.cs # Professional logging with audit trail
+│   ├── HealthCheckService.cs   # System health monitoring
 │   ├── PerformanceMetricsService.cs # System performance monitoring
-│   └── CachingService.cs       # Multi-tier intelligent caching
-
+│   ├── ConfigurationValidationService.cs # Settings validation
+│   ├── CachingService.cs       # Multi-tier intelligent caching
+│   ├── SearchFilterService.cs  # Advanced search and filtering
+│   └── VirtualizationService.cs # Large dataset handling
 ├── Utils/                  # Utility classes
 │   ├── FileUtils.cs        # Safe file operation helpers
 │   ├── ValidationUtils.cs  # Advanced security input validation
 │   └── AppConstants.cs     # Centralized application constants
-├── UpgradeApp.csproj       # Project configuration
+├── WingetWizard.csproj     # Project configuration
 ├── settings.json           # User preferences (auto-generated)
 ├── AI_Reports/             # Individual AI research reports (auto-generated)
 │   ├── PackageName1_YYYYMMDD_HHMMSS.md
 │   ├── PackageName2_YYYYMMDD_HHMMSS.md
 │   └── ...
 ├── README.md               # Basic project information
-├── DOCUMENTATION.md        # This comprehensive guide
-├── .gitignore             # Git exclusion rules
-└── installer.wxs          # WiX installer configuration
+├── docs/                   # Comprehensive documentation
+│   ├── DOCUMENTATION.md    # This technical guide
+│   ├── PROJECT_STRUCTURE.md # Architecture overview
+│   ├── SECURITY.md         # Security documentation
+│   └── DEPLOYMENT.txt      # Deployment instructions
+└── .gitignore             # Git exclusion rules
 ```
 
 ### 📋 Service Descriptions
@@ -459,9 +487,19 @@ UpgradeApp/
   - Thread-safe operations with comprehensive error handling
   
 - **`AIService.cs`**: AI integration and recommendation engine
-  - Supports both Claude AI and Perplexity API providers
+  - Supports Claude AI, Perplexity API, and AWS Bedrock providers
   - Methods: `GetAIRecommendationAsync()`, `MakeApiRequestAsync()`
   - Structured prompting with comprehensive upgrade analysis framework
+  
+- **`BedrockService.cs`**: AWS Bedrock integration
+  - Enterprise AI platform with multiple model options
+  - Methods: `InvokeModelAsync()`, `ValidateCredentialsAsync()`
+  - Secure AWS authentication and request signing
+  
+- **`BedrockModelDiscoveryService.cs`**: Dynamic model discovery
+  - Automatic detection of available Bedrock models
+  - Methods: `DiscoverModelsAsync()`, `GetAvailableModelsAsync()`
+  - Region-specific model availability
   
 - **`ReportService.cs`**: AI report generation and management
   - Methods: `CreateMarkdownContent()`, `SaveIndividualPackageReports()`
@@ -473,13 +511,36 @@ UpgradeApp/
   - Secure API key storage and retrieval
   - JSON-based configuration persistence
 
+- **`HealthCheckService.cs`**: System health monitoring
+  - Methods: `PerformHealthCheckAsync()`, `CheckDiskSpace()`, `CheckMemoryUsage()`
+  - Comprehensive system diagnostics and health reporting
+  - Performance metrics and resource monitoring
+
+- **`ConfigurationValidationService.cs`**: Settings validation
+  - Methods: `ValidateConfigurationAsync()`, `TestApiConnectionsAsync()`
+  - API key validation and connection testing
+  - Configuration integrity verification
+
+- **`CachingService.cs`**: Multi-tier caching system
+  - Methods: `GetAsync()`, `SetAsync()`, `InvalidateAsync()`
+  - Memory, disk, and network caching layers
+  - Intelligent cache management and cleanup
+
+- **`SearchFilterService.cs`**: Advanced search and filtering
+  - Methods: `FilterPackagesAsync()`, `SearchPackagesAsync()`
+  - Real-time search with multiple filter criteria
+  - Efficient large dataset handling
+
+- **`VirtualizationService.cs`**: Large dataset handling
+  - Methods: `VirtualizeListAsync()`, `GetVisibleItemsAsync()`
+  - Memory-efficient handling of large package lists
+  - Smooth scrolling and performance optimization
+
 #### **UI Layer**
 - **`MainForm.cs`**: Primary application interface
   - Service dependency injection for clean architecture
   - Claude-inspired modern design with responsive layout
   - Event handlers utilizing service classes for business logic
-  
-
 
 #### **Utilities Layer**
 - **`FileUtils.cs`**: Common file operation utilities
@@ -504,14 +565,14 @@ UpgradeApp/
 
 ### Single-File Executable
 The application builds to a single executable file containing all dependencies:
-- **Size**: ~100MB (includes .NET runtime)
+- **Size**: ~138MB (includes .NET 6.0 runtime)
 - **Dependencies**: None (self-contained)
 - **Installation**: Copy executable + config.json
 - **Portability**: Runs on any Windows 10/11 system
 
 ### Configuration Requirements
 1. **config.json**: Must be in same directory as executable
-2. **API Keys**: Anthropic and/or Perplexity API keys required for AI features
+2. **API Keys**: Anthropic, Perplexity, and/or AWS Bedrock API keys required for AI features
 3. **Permissions**: Standard user permissions sufficient
 4. **Network**: Internet access required for AI research and package updates
 
@@ -528,7 +589,7 @@ The application builds to a single executable file containing all dependencies:
 - **Advanced Search**: Full-text search across saved AI reports
 
 ### Technical Improvements
-- **Caching System**: Local storage for AI recommendations
+- **Enhanced Caching**: Redis integration for distributed caching
 - **Performance Optimization**: Parallel processing for bulk operations
 - **Enhanced Logging**: Structured logging with log levels
 - **Plugin Architecture**: Extensible AI provider system
@@ -556,10 +617,13 @@ The application builds to a single executable file containing all dependencies:
 **Architecture**: Service-Based Modular Design with Dependency Injection  
 **Built With**: Q Developer, Claude and Cursor - WingetWizard makes package management magical! 🧿
 
-### 🎯 **What's New in v2.1**
+### 🎯 **What's New in v2.4**
 - **Modular Architecture**: Complete refactoring from monolithic to service-based design
 - **Dependency Injection**: Services are properly injected into the main form
 - **Separation of Concerns**: Business logic separated from UI code
 - **Enhanced Maintainability**: Each component has a single, focused responsibility
 - **Improved Testability**: Services can be unit tested independently
 - **Better Scalability**: Easy to add new features and AI providers
+- **AWS Bedrock Integration**: Enterprise AI platform with multiple model options
+- **Enhanced Security**: Comprehensive input validation and threat protection
+- **Performance Optimization**: Multi-tier caching and virtualization for large datasets

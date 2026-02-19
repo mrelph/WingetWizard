@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using UpgradeApp.Models;
+using WingetWizard.Models;
 
-namespace UpgradeApp.Services
+namespace WingetWizard.Services
 {
     /// <summary>
     /// Provides virtualization and pagination support for large package lists.
@@ -45,22 +45,22 @@ namespace UpgradeApp.Services
         /// <param name="allPackages">Complete list of packages</param>
         /// <param name="pageNumber">Page number (0-based)</param>
         /// <returns>Page of packages and pagination info</returns>
-        public async Task<VirtualizedPage<UpgradableApp>> GetPageAsync(IEnumerable<UpgradableApp> allPackages, int pageNumber)
+        public Task<VirtualizedPage<UpgradableApp>> GetPageAsync(IEnumerable<UpgradableApp> allPackages, int pageNumber)
         {
             var packages = allPackages.ToList();
             var totalPackages = packages.Count;
 
             if (!ShouldVirtualize(totalPackages))
             {
-                return new VirtualizedPage<UpgradableApp>
-                {
-                    Items = packages,
-                    PageNumber = 0,
-                    TotalPages = 1,
-                    TotalItems = totalPackages,
-                    PageSize = totalPackages,
-                    IsVirtualized = false
-                };
+                            return Task.FromResult(new VirtualizedPage<UpgradableApp>
+            {
+                Items = packages,
+                PageNumber = 0,
+                TotalPages = 1,
+                TotalItems = totalPackages,
+                PageSize = totalPackages,
+                IsVirtualized = false
+            });
             }
 
             var totalPages = (int)Math.Ceiling((double)totalPackages / _pageSize);
@@ -69,15 +69,15 @@ namespace UpgradeApp.Services
             // Check cache first
             if (_pageCache.TryGetValue(pageNumber, out var cachedPage))
             {
-                return new VirtualizedPage<UpgradableApp>
-                {
-                    Items = cachedPage,
-                    PageNumber = pageNumber,
-                    TotalPages = totalPages,
-                    TotalItems = totalPackages,
-                    PageSize = _pageSize,
-                    IsVirtualized = true
-                };
+                            return Task.FromResult(new VirtualizedPage<UpgradableApp>
+            {
+                Items = cachedPage,
+                PageNumber = pageNumber,
+                TotalPages = totalPages,
+                TotalItems = totalPackages,
+                PageSize = _pageSize,
+                IsVirtualized = true
+            });
             }
 
             // Calculate page boundaries
@@ -88,7 +88,7 @@ namespace UpgradeApp.Services
             // Cache the page
             CachePageAsync(pageNumber, pageItems);
 
-            return new VirtualizedPage<UpgradableApp>
+            return Task.FromResult(new VirtualizedPage<UpgradableApp>
             {
                 Items = pageItems,
                 PageNumber = pageNumber,
@@ -96,7 +96,7 @@ namespace UpgradeApp.Services
                 TotalItems = totalPackages,
                 PageSize = _pageSize,
                 IsVirtualized = true
-            };
+            });
         }
 
         /// <summary>
@@ -107,14 +107,14 @@ namespace UpgradeApp.Services
         /// <param name="count">Number of items to retrieve</param>
         /// <param name="pageNumber">Page number (0-based)</param>
         /// <returns>Range of packages</returns>
-        public async Task<List<UpgradableApp>> GetRangeAsync(IEnumerable<UpgradableApp> allPackages, int startIndex, int count)
+        public Task<List<UpgradableApp>> GetRangeAsync(IEnumerable<UpgradableApp> allPackages, int startIndex, int count)
         {
             var packages = allPackages.ToList();
             var totalPackages = packages.Count;
 
             if (!ShouldVirtualize(totalPackages))
             {
-                return packages;
+                return Task.FromResult(packages);
             }
 
             // Validate range
@@ -122,7 +122,7 @@ namespace UpgradeApp.Services
             count = Math.Min(count, totalPackages - startIndex);
 
             if (count <= 0)
-                return new List<UpgradableApp>();
+                return Task.FromResult(new List<UpgradableApp>());
 
             var rangeItems = packages.Skip(startIndex).Take(count).ToList();
 
@@ -138,7 +138,7 @@ namespace UpgradeApp.Services
                 CachePageAsync(page, pageItems);
             }
 
-            return rangeItems;
+            return Task.FromResult(rangeItems);
         }
 
         /// <summary>
@@ -179,11 +179,11 @@ namespace UpgradeApp.Services
         /// <param name="allPackages">Complete list of packages</param>
         /// <param name="statusFilter">Status to filter by</param>
         /// <returns>Filtered packages</returns>
-        public async Task<List<UpgradableApp>> FilterByStatusAsync(IEnumerable<UpgradableApp> allPackages, string statusFilter)
+        public Task<List<UpgradableApp>> FilterByStatusAsync(IEnumerable<UpgradableApp> allPackages, string statusFilter)
         {
             if (string.IsNullOrWhiteSpace(statusFilter))
             {
-                return allPackages.ToList();
+                return Task.FromResult(allPackages.ToList());
             }
 
             var packages = allPackages.ToList();
@@ -191,7 +191,7 @@ namespace UpgradeApp.Services
                 pkg.Status.Contains(statusFilter, StringComparison.OrdinalIgnoreCase)
             ).ToList();
 
-            return filteredPackages;
+            return Task.FromResult(filteredPackages);
         }
 
         /// <summary>
