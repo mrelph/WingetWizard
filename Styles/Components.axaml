@@ -87,6 +87,8 @@
         <SolidColorBrush x:Key="AI.Purple.200" Color="#DDD6FE"/>
         <SolidColorBrush x:Key="AI.Purple.600" Color="#8B5CF6"/>
         <SolidColorBrush x:Key="AI.Purple.700" Color="#7C3AED"/>
+        <SolidColorBrush x:Key="AI.Purple.800" Color="#6B21A8"/>
+        <SolidColorBrush x:Key="AI.Purple.900" Color="#581C87"/>
         
         <!-- Neutral Colors -->
         <SolidColorBrush x:Key="Neutral.White" Color="#FFFFFF"/>
@@ -245,37 +247,10 @@
         <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
     </Style>
     
-    <!-- Badge Styles -->
-    <Style Selector="Border.badge-theme">
-        <Setter Property="Background" Value="{StaticResource Primary.100}"/>
-        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
-        <Setter Property="Padding" Value="6,2"/>
-        <Setter Property="HorizontalAlignment" Value="Center"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
-    </Style>
-    
-    <Style Selector="Border.success-badge">
-        <Setter Property="Background" Value="{StaticResource Success.100}"/>
-        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
-        <Setter Property="Padding" Value="6,2"/>
-        <Setter Property="HorizontalAlignment" Value="Center"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
-    </Style>
-    
-    <Style Selector="Border.warning-badge">
-        <Setter Property="Background" Value="{StaticResource Warning.100}"/>
-        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
-        <Setter Property="Padding" Value="6,2"/>
-        <Setter Property="HorizontalAlignment" Value="Center"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
-    </Style>
-    
-    <Style Selector="Border.error-badge">
-        <Setter Property="Background" Value="{StaticResource Error.100}"/>
-        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
-        <Setter Property="Padding" Value="6,2"/>
-        <Setter Property="HorizontalAlignment" Value="Center"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
+    <!-- Skeleton Element Animation Styles -->
+    <Style Selector="Rectangle.skeleton-element">
+        <Setter Property="Fill" Value="{StaticResource Neutral.200}"/>
+        <Setter Property="Opacity" Value="0.6"/>
     </Style>
     
 </Styles>

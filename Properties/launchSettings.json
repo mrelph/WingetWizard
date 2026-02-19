@@ -1,9 +1,6 @@
 {
   "profiles": {
-    "WingetWizard.WinUI.Test (Package)": {
-      "commandName": "MsixPackage"
-    },
-    "WingetWizard.WinUI.Test (Unpackaged)": {
+    "WingetWizard.Avalonia": {
       "commandName": "Project"
     }
   }

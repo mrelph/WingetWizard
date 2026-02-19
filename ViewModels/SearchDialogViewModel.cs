@@ -34,6 +34,12 @@ namespace WingetWizard.Avalonia.ViewModels
         [ObservableProperty]
         private bool canInstall = false;
 
+        [ObservableProperty]
+        private bool isInstalling;
+
+        [ObservableProperty]
+        private string installationProgress = "Ready to search";
+
         public SearchDialogViewModel() : base(null!)
         {
             // Get services from the application's service provider
@@ -140,16 +146,32 @@ namespace WingetWizard.Avalonia.ViewModels
 
             if (result)
             {
-                StatusMessage = "Installing selected packages...";
+                IsInstalling = true;
+                StatusMessage = $"Starting installation of {selectedPackages.Count} package(s)...";
+                ResultsCountMessage = "Installation in progress...";
+                InstallationProgress = "Preparing installation...";
                 
                 try
                 {
+                    // Update progress for each package
+                    for (int i = 0; i < selectedPackages.Count; i++)
+                    {
+                        var packageId = selectedPackages[i];
+                        InstallationProgress = $"Installing {packageId} ({i + 1}/{selectedPackages.Count})";
+                        StatusMessage = $"Installing {packageId}...";
+                        
+                        // Small delay to allow UI updates
+                        await Task.Delay(200);
+                    }
+                    
+                    InstallationProgress = "Processing installation results...";
+                    StatusMessage = "Installation completed. Processing results...";
                     var installResult = await _packageService.InstallMultiplePackagesAsync(selectedPackages, false);
                     
                     if (installResult.Success)
                     {
-                        await _notificationService.ShowSuccessAsync("Installation Complete", 
-                            $"Installation completed successfully!\n\nInstalled {selectedPackages.Count} package(s).");
+                        var successMessage = $"Installation completed successfully!\n\n{installResult.Message}";
+                        await _notificationService.ShowSuccessAsync("Installation Complete", successMessage);
                         
                         // Clear selection after successful installation
                         foreach (var searchResult in SearchResults)
@@ -158,24 +180,37 @@ namespace WingetWizard.Avalonia.ViewModels
                         }
                         UpdateInstallButtonState();
                         StatusMessage = "Installation completed successfully";
+                        ResultsCountMessage = "Ready for new search";
+                        InstallationProgress = "Installation completed successfully";
                     }
                     else
                     {
-                        await _notificationService.ShowErrorAsync("Installation Error", 
-                            $"Installation failed: {installResult.Message}");
-                        StatusMessage = "Installation failed";
+                        var errorMessage = $"Installation encountered issues:\n\n{installResult.Message}";
+                        await _notificationService.ShowErrorAsync("Installation Error", errorMessage);
+                        StatusMessage = "Installation completed with issues";
+                        ResultsCountMessage = "Some packages may not have installed correctly";
+                        InstallationProgress = "Installation completed with issues";
                     }
                 }
                 catch (Exception ex)
                 {
-                    await _notificationService.ShowErrorAsync("Installation Error", 
-                        $"Installation failed: {ex.Message}");
+                    var errorMessage = $"Installation failed: {ex.Message}";
+                    await _notificationService.ShowErrorAsync("Installation Error", errorMessage);
                     StatusMessage = "Installation error occurred";
+                    ResultsCountMessage = "Installation failed - check your internet connection";
+                    InstallationProgress = "Installation failed";
                 }
                 finally
                 {
-                    // Keep the current status message
+                    IsInstalling = false;
                 }
+            }
+            else
+            {
+                // User cancelled
+                StatusMessage = "Installation cancelled";
+                ResultsCountMessage = "Ready for new search";
+                InstallationProgress = "Installation cancelled";
             }
         }
 

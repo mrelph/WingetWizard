@@ -1,0 +1,238 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Package Skeleton Template -->
+    <DataTemplate x:Key="PackageSkeletonTemplate">
+        <Border Background="{StaticResource Surface.Primary.Brush}" 
+               CornerRadius="{StaticResource Radius.Large}" 
+               Padding="{StaticResource Space.Large}" 
+               Margin="{StaticResource Space.Small}" 
+               Effect="{StaticResource Shadow.Medium}">
+            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+                
+                <!-- Icon Skeleton -->
+                <Rectangle Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" 
+                          Classes="skeleton-element"
+                          Width="48" Height="48" 
+                          RadiusX="8" RadiusY="8" 
+                          Margin="0,0,12,0"/>
+                
+                <!-- Content Skeleton -->
+                <StackPanel Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" 
+                           Spacing="8">
+                    <!-- Package Name -->
+                    <Rectangle Classes="skeleton-element" 
+                              Width="200" Height="16" 
+                              RadiusX="2" RadiusY="2"/>
+                    <!-- Package ID -->
+                    <Rectangle Classes="skeleton-element" 
+                              Width="150" Height="12" 
+                              RadiusX="2" RadiusY="2"/>
+                    <!-- Description Line 1 -->
+                    <Rectangle Classes="skeleton-element" 
+                              Width="280" Height="11" 
+                              RadiusX="2" RadiusY="2"/>
+                    <!-- Description Line 2 -->
+                    <Rectangle Classes="skeleton-element" 
+                              Width="240" Height="11" 
+                              RadiusX="2" RadiusY="2"/>
+                    
+                    <!-- Badges Row -->
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Rectangle Classes="skeleton-element" 
+                                  Width="60" Height="20" 
+                                  RadiusX="10" RadiusY="10"/>
+                        <Rectangle Classes="skeleton-element" 
+                                  Width="70" Height="20" 
+                                  RadiusX="10" RadiusY="10"/>
+                    </StackPanel>
+                </StackPanel>
+                
+                <!-- Actions Skeleton -->
+                <StackPanel Grid.Row="0" Grid.Column="2" Grid.RowSpan="3" 
+                           Spacing="8" VerticalAlignment="Top">
+                    <!-- Primary Action Button -->
+                    <Rectangle Classes="skeleton-element" 
+                              Width="80" Height="32" 
+                              RadiusX="6" RadiusY="6"/>
+                    <!-- Secondary Action Button -->
+                    <Rectangle Classes="skeleton-element" 
+                              Width="32" Height="32" 
+                              RadiusX="6" RadiusY="6"/>
+                    <!-- Remove Button -->
+                    <Rectangle Classes="skeleton-element" 
+                              Width="32" Height="32" 
+                              RadiusX="6" RadiusY="6"/>
+                    <!-- Status Badge -->
+                    <Rectangle Classes="skeleton-element" 
+                              Width="60" Height="24" 
+                              RadiusX="4" RadiusY="4"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <!-- Dashboard Stats Skeleton Template -->
+    <DataTemplate x:Key="DashboardStatsSkeletonTemplate">
+        <Border Background="{StaticResource Primary.50.Brush}" 
+               BorderBrush="{StaticResource Primary.200.Brush}"
+               BorderThickness="1"
+               CornerRadius="{StaticResource Radius.Large}"
+               Padding="{StaticResource Space.Large}"
+               Effect="{StaticResource Shadow.Small}">
+            <StackPanel HorizontalAlignment="Center" Spacing="{StaticResource Spacing.Small}">
+                <!-- Icon Skeleton -->
+                <Rectangle Classes="skeleton-element" 
+                          Width="32" Height="32" 
+                          RadiusX="4" RadiusY="4" 
+                          HorizontalAlignment="Center"/>
+                <!-- Number Skeleton -->
+                <Rectangle Classes="skeleton-element" 
+                          Width="40" Height="24" 
+                          RadiusX="2" RadiusY="2" 
+                          HorizontalAlignment="Center" 
+                          Margin="0,4"/>
+                <!-- Label Skeleton -->
+                <Rectangle Classes="skeleton-element" 
+                          Width="80" Height="12" 
+                          RadiusX="2" RadiusY="2" 
+                          HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+    </DataTemplate>
+
+    <!-- Activity Item Skeleton Template -->
+    <DataTemplate x:Key="ActivitySkeletonTemplate">
+        <Border Background="{StaticResource Surface.Secondary.Brush}"
+               CornerRadius="{StaticResource Radius.Medium}"
+               Padding="{StaticResource Space.Medium}"
+               Margin="0,0,0,8">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Icon Skeleton -->
+                <Rectangle Grid.Column="0" 
+                          Classes="skeleton-element"
+                          Width="20" Height="20" 
+                          RadiusX="2" RadiusY="2" 
+                          VerticalAlignment="Center"
+                          Margin="0,0,12,0"/>
+                
+                <!-- Content Skeleton -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                    <!-- Title -->
+                    <Rectangle Classes="skeleton-element" 
+                              Width="180" Height="14" 
+                              RadiusX="2" RadiusY="2"/>
+                    <!-- Description -->
+                    <Rectangle Classes="skeleton-element" 
+                              Width="240" Height="12" 
+                              RadiusX="2" RadiusY="2"/>
+                </StackPanel>
+                
+                <!-- Time Skeleton -->
+                <Rectangle Grid.Column="2" 
+                          Classes="skeleton-element"
+                          Width="60" Height="11" 
+                          RadiusX="2" RadiusY="2" 
+                          VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <!-- Filter Bar Skeleton Template -->
+    <DataTemplate x:Key="FilterBarSkeletonTemplate">
+        <Border Background="{StaticResource Surface.Primary.Brush}" 
+               CornerRadius="{StaticResource Radius.Large}" 
+               Padding="{StaticResource Space.Large}" 
+               Effect="{StaticResource Shadow.Small}">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                
+                <!-- Search Skeleton -->
+                <Rectangle Grid.Column="0" 
+                          Classes="skeleton-element"
+                          Height="40" 
+                          RadiusX="8" RadiusY="8" 
+                          Margin="0,0,16,0"/>
+                
+                <!-- Filter Dropdown Skeleton -->
+                <Rectangle Grid.Column="1" 
+                          Classes="skeleton-element"
+                          Width="150" Height="40" 
+                          RadiusX="8" RadiusY="8" 
+                          Margin="0,0,16,0"/>
+                
+                <!-- View Toggle Skeleton -->
+                <Rectangle Grid.Column="2" 
+                          Classes="skeleton-element"
+                          Width="40" Height="40" 
+                          RadiusX="8" RadiusY="8" 
+                          Margin="0,0,16,0"/>
+                
+                <!-- Bulk Actions Skeleton -->
+                <Rectangle Grid.Column="3" 
+                          Classes="skeleton-element"
+                          Width="100" Height="40" 
+                          RadiusX="8" RadiusY="8"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <!-- Loading Message Template -->
+    <DataTemplate x:Key="LoadingMessageTemplate">
+        <Border Background="{StaticResource Surface.Primary.Brush}" 
+               CornerRadius="{StaticResource Radius.Large}" 
+               Padding="{StaticResource Space.XLarge}" 
+               HorizontalAlignment="Center" 
+               VerticalAlignment="Center"
+               Effect="{StaticResource Shadow.Large}">
+            <StackPanel Spacing="{StaticResource Spacing.Medium}" HorizontalAlignment="Center">
+                <!-- Spinning Icon -->
+                <Border Background="{StaticResource Primary.100.Brush}" 
+                       Width="48" Height="48" 
+                       CornerRadius="24">
+                    <TextBlock Text="⟳" 
+                              FontSize="24" 
+                              HorizontalAlignment="Center" 
+                              VerticalAlignment="Center"
+                              Foreground="{StaticResource Primary.600.Brush}">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform/>
+                        </TextBlock.RenderTransform>
+                        <TextBlock.Styles>
+                            <Style Selector="TextBlock">
+                                <Style.Animations>
+                                    <Animation Duration="0:0:1" IterationCount="INFINITE">
+                                        <KeyFrame Cue="0%">
+                                            <Setter Property="RenderTransform">
+                                                <RotateTransform Angle="0"/>
+                                            </Setter>
+                                        </KeyFrame>
+                                        <KeyFrame Cue="100%">
+                                            <Setter Property="RenderTransform">
+                                                <RotateTransform Angle="360"/>
+                                            </Setter>
+                                        </KeyFrame>
+                                    </Animation>
+                                </Style.Animations>
+                            </Style>
+                        </TextBlock.Styles>
+                    </TextBlock>
+                </Border>
+                
+                <!-- Status Message -->
+                <TextBlock Text="{Binding LoadingMessage, FallbackValue='Loading packages...'}" 
+                          FontSize="{StaticResource FontSize.Body}"
+                          Foreground="{StaticResource Text.Primary.Brush}"
+                          HorizontalAlignment="Center"
+                          TextWrapping="Wrap"
+                          MaxWidth="300"/>
+                          
+                <!-- Progress Indicator -->
+                <ProgressBar IsIndeterminate="True" 
+                           Width="200" 
+                           Foreground="{StaticResource Primary.500.Brush}"
+                           Background="{StaticResource Primary.100.Brush}"/>
+            </StackPanel>
+        </Border>
+    </DataTemplate>
+
+</ResourceDictionary>

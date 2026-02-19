@@ -8,22 +8,64 @@
     </Application.DataTemplates>
 
     <Application.Resources>
-        <!-- Design Tokens -->
+        <!-- Include Resource Dictionaries -->
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://WingetWizard.Avalonia/Styles/DesignTokens.axaml"/>
+                <ResourceInclude Source="/Styles/DesignTokens.axaml"/>
+                <ResourceInclude Source="/Styles/SkeletonLoader.axaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <!-- Colors -->
+            <SolidColorBrush x:Key="Surface.Primary.Brush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="Surface.Secondary.Brush" Color="#F8FAFC"/>
+            <SolidColorBrush x:Key="Text.Primary.Brush" Color="#1E293B"/>
+            <SolidColorBrush x:Key="Text.Secondary.Brush" Color="#64748B"/>
+            <SolidColorBrush x:Key="Primary.500.Brush" Color="#3B82F6"/>
+            <SolidColorBrush x:Key="Primary.100.Brush" Color="#DBEAFE"/>
+            <SolidColorBrush x:Key="Primary.700.Brush" Color="#1D4ED8"/>
+            <SolidColorBrush x:Key="AI.Purple.100.Brush" Color="#F3E8FF"/>
+            <SolidColorBrush x:Key="AI.Purple.700.Brush" Color="#7C3AED"/>
+            <SolidColorBrush x:Key="Border.Light.Brush" Color="#E2E8F0"/>
+            
+            <!-- Spacing -->
+            <Thickness x:Key="Space.Small">8</Thickness>
+            <Thickness x:Key="Space.Medium">16</Thickness>
+            <Thickness x:Key="Space.Large">24</Thickness>
+            
+            <!-- Radius -->
+            <CornerRadius x:Key="Radius.Small">4</CornerRadius>
+            <CornerRadius x:Key="Radius.Medium">8</CornerRadius>
+            <CornerRadius x:Key="Radius.Large">12</CornerRadius>
+            
+            <!-- Font Sizes -->
+            <x:Double x:Key="FontSize.Small">12</x:Double>
+            <x:Double x:Key="FontSize.Body">14</x:Double>
+            <x:Double x:Key="FontSize.H3">16</x:Double>
+            <x:Double x:Key="FontSize.H2">20</x:Double>
+            <x:Double x:Key="FontSize.H1">24</x:Double>
+            <x:Double x:Key="FontSize.Caption">11</x:Double>
+            
+            <!-- Font Weights -->
+            <FontWeight x:Key="FontWeight.Medium">SemiBold</FontWeight>
+            <FontWeight x:Key="FontWeight.Bold">Bold</FontWeight>
+            
+            <!-- Spacing Values -->
+            <x:Double x:Key="Spacing.Small">4</x:Double>
+            <x:Double x:Key="Spacing.Medium">8</x:Double>
+            <x:Double x:Key="Spacing.Large">16</x:Double>
+            
+            <!-- Fonts -->
+            <FontFamily x:Key="Font.Display">Segoe UI</FontFamily>
+            
+            <!-- Shadows -->
+            <BoxShadows x:Key="Shadow.Small">0 2 4 #20000000</BoxShadows>
+            <BoxShadows x:Key="Shadow.Large">0 8 16 #30000000</BoxShadows>
         </ResourceDictionary>
     </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
-        
-        <!-- Design System -->
-        <StyleInclude Source="avares://WingetWizard.Avalonia/Styles/Components.axaml"/>
-        
-        <!-- Legacy Styles -->
-        <StyleInclude Source="avares://WingetWizard.Avalonia/Styles/ModernStyles.axaml"/>
+        <!-- Include our design system -->
+        <StyleInclude Source="/Styles/Components.axaml"/>
     </Application.Styles>
 </Application>

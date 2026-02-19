@@ -6,12 +6,16 @@
              xmlns:conv="using:WingetWizard.Avalonia.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="WingetWizard.Avalonia.Views.PackagesPage"
+             x:DataType="vm:PackagesViewModel"
              Background="Transparent">
     
     <UserControl.Resources>
         <conv:UpdateAvailableToStatusConverter x:Key="UpdateAvailableToStatusConverter"/>
         <conv:UpdateAvailableToBrushConverter x:Key="UpdateAvailableToBrushConverter"/>
         <conv:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>
+        <conv:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
+        <conv:InsightTypeToIconConverter x:Key="InsightTypeToIconConverter"/>
+        <conv:BoolToStringConverter x:Key="BoolToStringConverter"/>
     </UserControl.Resources>
     
     <Grid Margin="0,16">
@@ -19,456 +23,245 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
         <!-- Header Section -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,24">
-            <TextBlock Text="📦 Package Management" 
-                      FontSize="28" 
-                      FontWeight="Bold" 
-                      Foreground="White"/>
-            <TextBlock Text="Install, update, and manage software packages with ease" 
-                      FontSize="16" 
-                      Foreground="#94A3B8" 
-                      Margin="0,8,0,0"/>
-        </StackPanel>
+        <Border Grid.Row="0" Classes="card-theme" Margin="0,0,0,16">
+            <StackPanel Spacing="{StaticResource Spacing.Medium}">
+                <TextBlock Classes="heading-1" Text="📦 Package Management"/>
+                <TextBlock Classes="body-1" 
+                          Text="Install, update, and manage software packages with ease"
+                          Foreground="{StaticResource Text.Secondary}"/>
+            </StackPanel>
+        </Border>
         
-        <!-- Controls Section -->
-        <Grid Grid.Row="1" Margin="0,0,0,16">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            
-            <!-- Search Box -->
-            <Border Grid.Column="0" 
-                   Background="#334155" 
-                   CornerRadius="8" 
-                   Padding="16,12" 
-                   Margin="0,0,16,0">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+        <!-- Filter Bar -->
+        <Border Grid.Row="1" Classes="card-theme" Margin="0,0,0,16">
+            <StackPanel Spacing="{StaticResource Spacing.Medium}">
+                <!-- Primary Actions Row -->
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                    <!-- Search Container -->
+                    <Border Grid.Column="0" 
+                           Background="{StaticResource Surface.Secondary}" 
+                           CornerRadius="{StaticResource Radius.Medium}" 
+                           Padding="{StaticResource Space.Small}" 
+                           Margin="0,0,8,0">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox Grid.Column="0"
+                                    Name="SearchTextBox"
+                                    Watermark="Search packages..."
+                                    Text="{Binding SearchText}"
+                                    Classes="search-input"/>
+                            <Button Grid.Column="1" 
+                                   Classes="secondary-button"
+                                   Command="{Binding ClearSearchCommand}"
+                                   IsVisible="{Binding HasSearchText}"
+                                   Margin="4,0,0,0"
+                                   Padding="8,4">
+                                <TextBlock Text="✕" FontSize="10"/>
+                            </Button>
+                        </Grid>
+                    </Border>
                     
-                    <TextBlock Grid.Column="0" 
-                              Text="🔍" 
-                              FontSize="16" 
-                              Foreground="#94A3B8" 
-                              VerticalAlignment="Center" 
-                              Margin="0,0,12,0"/>
+                    <!-- Filter Dropdown -->
+                    <ComboBox Grid.Column="1" 
+                             ItemsSource="{Binding FilterOptions}"
+                             SelectedItem="{Binding SelectedFilter}"
+                             MinWidth="150"
+                             Margin="0,0,8,0">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{Binding Icon}"/>
+                                    <TextBlock Text="{Binding Label}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                     
-                    <TextBox Grid.Column="1" 
-                            Name="SearchBox"
-                            Text="{Binding SearchQuery}"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Foreground="White"
-                            FontSize="14"
-                            Watermark="Search packages..."
-                            VerticalAlignment="Center"/>
+                    <!-- Refresh Button -->
+                    <Button Grid.Column="2" 
+                           Classes="primary-button"
+                           Command="{Binding RefreshCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="🔄"/>
+                            <TextBlock Text="Refresh"/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
-            </Border>
-            
-            <!-- Filter Dropdown -->
-            <ComboBox Grid.Column="1" 
-                     Name="FilterComboBox"
-                     SelectedItem="{Binding SelectedFilter}"
-                     ItemsSource="{Binding FilterOptions}"
-                     Background="#334155"
-                     Foreground="White"
-                     BorderThickness="0"
-                     CornerRadius="8"
-                     Padding="16,12"
-                     Margin="0,0,16,0"
-                     MinWidth="150"/>
-            
-            <!-- Refresh Button -->
-            <Button Grid.Column="2" 
-                   Name="RefreshBtn"
-                   Command="{Binding RefreshPackagesCommand}"
-                   
-                   Background="#4F46E5"
-                   Foreground="White"
-                   BorderThickness="0"
-                   CornerRadius="8"
-                   Padding="16,12"
-                   Margin="0,0,16,0"
-                   Cursor="Hand">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="🔄" FontSize="14" Margin="0,0,8,0"/>
-                    <TextBlock Text="Refresh" FontSize="14" FontWeight="Medium"/>
-                </StackPanel>
-            </Button>
-            
-            <!-- Load Button -->
-            <Button Grid.Column="3" 
-                   Name="LoadBtn"
-                   Command="{Binding LoadPackagesCommand}"
-                   
-                   Background="#10B981"
-                   Foreground="White"
-                   BorderThickness="0"
-                   CornerRadius="8"
-                   Padding="16,12"
-                   Margin="0,0,16,0"
-                   Cursor="Hand">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="📥" FontSize="14" Margin="0,0,8,0"/>
-                    <TextBlock Text="Load" FontSize="14" FontWeight="Medium"/>
-                </StackPanel>
-            </Button>
-            
-            <!-- Search & Install Button -->
-            <Button Grid.Column="4" 
-                   Name="SearchInstallBtn"
-                   Command="{Binding SearchAndInstallCommand}"
-                   
-                   Background="#8B5CF6"
-                   Foreground="White"
-                   BorderThickness="0"
-                   CornerRadius="8"
-                   Padding="16,12"
-                   Cursor="Hand">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="🔍" FontSize="14" Margin="0,0,8,0"/>
-                    <TextBlock Text="Search &amp; Install" FontSize="14" FontWeight="Medium"/>
-                </StackPanel>
-            </Button>
-        </Grid>
+                
+                <!-- Batch Actions Row -->
+                <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" 
+                      IsVisible="{Binding !IsEmpty}">
+                    <!-- Toggle Select All -->
+                    <Button Grid.Column="0" 
+                           Classes="secondary-button"
+                           Command="{Binding ToggleSelectAllCommand}"
+                           Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="☑️"/>
+                            <TextBlock Text="Toggle All"/>
+                        </StackPanel>
+                    </Button>
+                    
+                    <!-- Bulk Install Button -->
+                    <Button Grid.Column="1" 
+                           Classes="success-button"
+                           Command="{Binding BulkInstallCommand}"
+                           IsEnabled="{Binding HasSelectedPackages}"
+                           Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="📦"/>
+                            <TextBlock Text="Install Selected"/>
+                        </StackPanel>
+                    </Button>
+                    
+                    <!-- Bulk Update Button -->
+                    <Button Grid.Column="2" 
+                           Classes="primary-button"
+                           Command="{Binding BulkUpdateCommand}"
+                           IsEnabled="{Binding HasSelectedPackages}"
+                           Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🔄"/>
+                            <TextBlock Text="Update Selected"/>
+                        </StackPanel>
+                    </Button>
+                    
+                    <!-- Clear Selection Button -->
+                    <Button Grid.Column="3" 
+                           Classes="secondary-button"
+                           Command="{Binding ClearSelectionCommand}"
+                           IsEnabled="{Binding HasSelectedPackages}"
+                           Margin="0,0,16,0">
+                        <TextBlock Text="Clear"/>
+                    </Button>
+                    
+                    <!-- Selection Count -->
+                    <TextBlock Grid.Column="4" 
+                              Classes="body-2"
+                              VerticalAlignment="Center"
+                              Foreground="{StaticResource Text.Secondary}">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0} of {1} selected">
+                                <Binding Path="SelectedCount"/>
+                                <Binding Path="FilteredPackages.Count"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </Grid>
+                
+                <!-- Bulk Operation Progress -->
+                <Border IsVisible="{Binding IsBulkOperationInProgress}"
+                       Background="{StaticResource Surface.Tertiary}"
+                       CornerRadius="{StaticResource Radius.Small}"
+                       Padding="{StaticResource Space.Medium}">
+                    <StackPanel Spacing="{StaticResource Spacing.Small}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" 
+                                      Classes="body-2"
+                                      Text="{Binding StatusMessage}"/>
+                            <TextBlock Grid.Column="1" 
+                                      Classes="body-2"
+                                      Foreground="{StaticResource Text.Secondary}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0}/{1}">
+                                        <Binding Path="BulkOperationProgress"/>
+                                        <Binding Path="BulkOperationTotal"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </Grid>
+                        <ProgressBar Value="{Binding BulkOperationProgress}"
+                                    Maximum="{Binding BulkOperationTotal}"
+                                    Height="6"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
         
         <!-- Packages List -->
-        <Border Grid.Row="2" 
-               Background="#334155" 
-               CornerRadius="8" 
-               Padding="0">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                
-                <!-- List Header -->
-                <Border Grid.Row="0" 
-                       Background="#475569" 
-                       CornerRadius="8,8,0,0" 
-                       Padding="16,12">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="200"/>
-                            <ColumnDefinition Width="120"/>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <TextBlock Grid.Column="0" 
-                                  Text="Package Name" 
-                                  FontWeight="SemiBold" 
-                                  Foreground="White"/>
-                        <TextBlock Grid.Column="1" 
-                                  Text="ID" 
-                                  FontWeight="SemiBold" 
-                                  Foreground="White"/>
-                        <TextBlock Grid.Column="2" 
-                                  Text="Version" 
-                                  FontWeight="SemiBold" 
-                                  Foreground="White"/>
-                        <TextBlock Grid.Column="3" 
-                                  Text="Status" 
-                                  FontWeight="SemiBold" 
-                                  Foreground="White"/>
-                        <TextBlock Grid.Column="4" 
-                                  Text="Actions" 
-                                  FontWeight="SemiBold" 
-                                  Foreground="White"/>
-                    </Grid>
-                </Border>
-                
-                <!-- Packages ListView -->
-                <ScrollViewer Grid.Row="1" 
-                             VerticalScrollBarVisibility="Auto">
-                    <ListBox Name="PackagesListView"
-                              ItemsSource="{Binding FilteredPackages}"
-                              Background="Transparent"
-                              BorderThickness="0">
-                        <ListBox.ItemTemplate>
+        <Border Grid.Row="2" Classes="card-theme">
+            <ScrollViewer>
+                <StackPanel Spacing="{StaticResource Spacing.Medium}">
+                    <!-- Loading indicator -->
+                    <Border IsVisible="{Binding IsLoading}"
+                           Padding="{StaticResource Space.Large}">
+                        <StackPanel Spacing="{StaticResource Spacing.Medium}" 
+                                   HorizontalAlignment="Center">
+                            <TextBlock Text="⟳" FontSize="48" 
+                                      HorizontalAlignment="Center"/>
+                            <TextBlock Classes="body-1" 
+                                      Text="Loading packages..."
+                                      HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Package List -->
+                    <ItemsControl ItemsSource="{Binding Packages}"
+                                 IsVisible="{Binding !IsLoading}">
+                        <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <!-- Enhanced Package Card Design -->
-                                <Border Background="#475569" 
-                                       CornerRadius="12" 
-                                       Margin="8,6" 
-                                       Padding="20,16">
-                                    <Border.Effect>
-                                        <DropShadowEffect Color="Black" BlurRadius="8" Opacity="0.1" OffsetY="2"/>
-                                    </Border.Effect>
-                                    
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                <Border Classes="card-theme" 
+                                       Margin="0,0,0,8"
+                                       Background="{StaticResource Surface.Secondary}">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <!-- Selection Checkbox -->
+                                        <CheckBox Grid.Column="0" 
+                                                 IsChecked="{Binding IsSelected}"
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,12,0"/>
                                         
-                                        <!-- Header Row: Name, Status Badge, Selection -->
-                                        <Grid Grid.Row="0" Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            
-                                            <!-- Selection Checkbox -->
-                                            <CheckBox Grid.Column="0" 
-                                                     IsChecked="{Binding IsSelected}"
-                                                     VerticalAlignment="Center"
-                                                     Margin="0,0,12,0"/>
-                                            
-                                            <!-- Package Icon Placeholder -->
-                                            <Border Grid.Column="1" 
-                                                   Background="#64748B" 
-                                                   Width="40" Height="40" 
-                                                   CornerRadius="8"
-                                                   HorizontalAlignment="Left"
-                                                   VerticalAlignment="Center">
-                                                <TextBlock Text="📦" 
-                                                          FontSize="20" 
-                                                          HorizontalAlignment="Center" 
-                                                          VerticalAlignment="Center"/>
-                                            </Border>
-                                            
-                                            <!-- Package Info -->
-                                            <StackPanel Grid.Column="2" 
-                                                       Orientation="Vertical" 
-                                                       Margin="16,0,0,0"
-                                                       VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" 
-                                                          FontWeight="SemiBold" 
-                                                          Foreground="White" 
-                                                          FontSize="16"/>
-                                                <TextBlock Text="{Binding Id}" 
-                                                          Foreground="#94A3B8" 
-                                                          FontSize="12" 
-                                                          Margin="0,2,0,0"/>
-                                            </StackPanel>
-                                            
-                                            <!-- Status Badge -->
-                                            <Border Grid.Column="3" 
-                                                   Background="{Binding Available, Converter={StaticResource UpdateAvailableToBrushConverter}}" 
-                                                   CornerRadius="16" 
-                                                   Padding="12,6"
-                                                   VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Available, Converter={StaticResource UpdateAvailableToStatusConverter}}" 
-                                                          Foreground="White" 
-                                                          FontSize="11" 
-                                                          FontWeight="Medium"/>
-                                            </Border>
-                                        </Grid>
+                                        <StackPanel Grid.Column="1" 
+                                                   Spacing="{StaticResource Spacing.Small}">
+                                            <TextBlock Classes="heading-3" 
+                                                      Text="{Binding Name}"/>
+                                            <TextBlock Classes="body-2" 
+                                                      Text="{Binding Id}"
+                                                      Foreground="{StaticResource Text.Secondary}"/>
+                                            <TextBlock Classes="caption" 
+                                                      Text="{Binding Version}"
+                                                      Foreground="{StaticResource Text.Tertiary}"/>
+                                        </StackPanel>
                                         
-                                        <!-- Version Information Row -->
-                                        <Grid Grid.Row="1" Margin="52,0,0,12">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                                <TextBlock Text="Current:" 
-                                                          Foreground="#CBD5E1" 
-                                                          FontSize="13" 
-                                                          Margin="0,0,8,0"/>
-                                                <TextBlock Text="{Binding Version}" 
-                                                          Foreground="White" 
-                                                          FontSize="13" 
-                                                          FontWeight="Medium"/>
-                                            </StackPanel>
-                                            
-                                            <!-- Available Version (if exists) -->
-                                            <StackPanel Grid.Column="2" 
-                                                       Orientation="Horizontal"
-                                                       IsVisible="{Binding Available, Converter={StaticResource StringNotEmptyConverter}}">
-                                                <TextBlock Text="Available:" 
-                                                          Foreground="#CBD5E1" 
-                                                          FontSize="13" 
-                                                          Margin="0,0,8,0"/>
-                                                <TextBlock Text="{Binding Available}" 
-                                                          Foreground="#10B981" 
-                                                          FontSize="13" 
-                                                          FontWeight="Medium"/>
-                                            </StackPanel>
-                                        </Grid>
-                                        
-                                        <!-- Status Message Row (if any) -->
-                                        <Border Grid.Row="2" 
-                                               Background="#374151" 
-                                               CornerRadius="6" 
-                                               Padding="12,8" 
-                                               Margin="52,0,0,12"
-                                               IsVisible="{Binding Status, Converter={StaticResource StringNotEmptyConverter}}">
-                                            <TextBlock Text="{Binding Status}" 
-                                                      Foreground="#9CA3AF" 
-                                                      FontSize="12"/>
-                                        </Border>
-                                        
-                                        <!-- Action Buttons Row -->
-                                        <StackPanel Grid.Row="3" 
+                                        <StackPanel Grid.Column="2" 
                                                    Orientation="Horizontal" 
-                                                   HorizontalAlignment="Right"
-                                                   Spacing="8">
-                                            
-                                            <!-- Update Button (visible if update available) -->
-                                            <Button Background="#3B82F6"
-                                                    Foreground="White"
-                                                    BorderThickness="0"
-                                                    CornerRadius="8"
-                                                    Padding="16,8"
-                                                    FontSize="12"
-                                                    FontWeight="Medium"
-                                                    IsVisible="{Binding Available, Converter={StaticResource StringNotEmptyConverter}}"
-                                                    Command="{Binding $parent[UserControl].((vm:PackagesViewModel)DataContext).UpgradePackageCommandCommand}"
-                                                    CommandParameter="{Binding}">
-                                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                                    <TextBlock Text="⬆️" FontSize="12"/>
-                                                    <TextBlock Text="Update"/>
-                                                </StackPanel>
-                                            </Button>
-                                            
-                                            <!-- Install Button (for search results) -->
-                                            <Button Background="#10B981"
-                                                    Foreground="White"
-                                                    BorderThickness="0"
-                                                    CornerRadius="8"
-                                                    Padding="16,8"
-                                                    FontSize="12"
-                                                    FontWeight="Medium"
-                                                    Command="{Binding $parent[UserControl].((vm:PackagesViewModel)DataContext).InstallPackageCommandCommand}"
-                                                    CommandParameter="{Binding}">
-                                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                                    <TextBlock Text="⬇️" FontSize="12"/>
-                                                    <TextBlock Text="Install"/>
-                                                </StackPanel>
-                                            </Button>
-                                            
-                                            <!-- Uninstall Button -->
-                                            <Button Background="#EF4444"
-                                                    Foreground="White"
-                                                    BorderThickness="0"
-                                                    CornerRadius="8"
-                                                    Padding="16,8"
-                                                    FontSize="12"
-                                                    FontWeight="Medium"
-                                                    Command="{Binding $parent[UserControl].((vm:PackagesViewModel)DataContext).UninstallPackageCommandCommand}"
-                                                    CommandParameter="{Binding}">
-                                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                                    <TextBlock Text="🗑️" FontSize="12"/>
-                                                    <TextBlock Text="Remove"/>
-                                                </StackPanel>
-                                            </Button>
+                                                   Spacing="{StaticResource Spacing.Small}">
+                                            <Button Classes="primary-button"
+                                                   Content="Details"
+                                                   Padding="12,6"
+                                                   Command="{Binding DataContext.ShowPackageDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                   CommandParameter="{Binding}"/>
+                                            <Button Classes="secondary-button"
+                                                   Content="Install"
+                                                   Padding="12,6"
+                                                   Command="{Binding DataContext.InstallPackageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                   CommandParameter="{Binding}"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </ScrollViewer>
-            </Grid>
-        </Border>
-        
-        <!-- Status Footer -->
-        <Border Grid.Row="3" 
-               Background="#475569" 
-               CornerRadius="6" 
-               Padding="16,12" 
-               Margin="0,16,0,0">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                
-                <TextBlock Grid.Column="0" 
-                          Text="{Binding StatusMessage}" 
-                          Foreground="#E2E8F0" 
-                          VerticalAlignment="Center"/>
-                          
-                <StackPanel Grid.Column="1" 
-                          Orientation="Horizontal">
-                    <TextBlock Text="Total Packages:" 
-                              FontSize="12" 
-                              Foreground="#94A3B8" 
-                              VerticalAlignment="Center" 
-                              Margin="0,0,8,0"/>
-                    <TextBlock Text="{Binding Packages.Count}" 
-                              FontSize="12" 
-                              Foreground="#10B981" 
-                              FontWeight="Medium" 
-                              VerticalAlignment="Center"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-        
-        <!-- Loading Overlay -->
-        <Border Name="LoadingOverlay" 
-               Grid.RowSpan="4"
-               Background="#80000000"
-               IsVisible="{Binding IsLoading}"
-               ZIndex="1000">
-            <Grid>
-                <Border Background="#1E293B"
-                       CornerRadius="12"
-                       Padding="40"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       MaxWidth="300">
-                    <StackPanel HorizontalAlignment="Center">
-                        <!-- Loading Spinner -->
-                        <Border Name="LoadingSpinner"
-                               Width="48"
-                               Height="48"
-                               CornerRadius="24"
-                               BorderThickness="4"
-                               BorderBrush="#4F46E5"
-                               Margin="0,0,0,16">
-                            <Border.Styles>
-                                <Style Selector="Border#LoadingSpinner">
-                                    <Style.Animations>
-                                        <Animation Duration="0:0:1" IterationCount="INFINITE">
-                                            <KeyFrame Cue="0%">
-                                                <Setter Property="RenderTransform" Value="rotate(0deg)"/>
-                                            </KeyFrame>
-                                            <KeyFrame Cue="100%">
-                                                <Setter Property="RenderTransform" Value="rotate(360deg)"/>
-                                            </KeyFrame>
-                                        </Animation>
-                                    </Style.Animations>
-                                </Style>
-                            </Border.Styles>
-                        </Border>
-                        
-                        <TextBlock Name="LoadingText"
-                                  Text="Loading packages..."
-                                  FontSize="16"
-                                  FontWeight="SemiBold"
-                                  Foreground="White"
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    
+                    <!-- Empty State -->
+                    <StackPanel IsVisible="{Binding IsEmpty}"
+                               Spacing="{StaticResource Spacing.Medium}"
+                               HorizontalAlignment="Center"
+                               Margin="{StaticResource Space.XLarge}">
+                        <TextBlock Text="📦" FontSize="64" 
                                   HorizontalAlignment="Center"
-                                  Margin="0,0,0,8"/>
-                                  
-                        <TextBlock Name="LoadingSubtext"
-                                  Text="Please wait while we fetch the latest data"
-                                  FontSize="12"
-                                  Foreground="#94A3B8"
+                                  Opacity="0.5"/>
+                        <TextBlock Classes="heading-2" 
+                                  Text="No packages found"
                                   HorizontalAlignment="Center"/>
+                        <TextBlock Classes="body-1" 
+                                  Text="Try refreshing or adjusting your search"
+                                  HorizontalAlignment="Center"
+                                  Foreground="{StaticResource Text.Secondary}"/>
                     </StackPanel>
-                </Border>
-            </Grid>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>

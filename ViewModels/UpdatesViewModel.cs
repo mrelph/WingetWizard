@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +32,9 @@ public partial class UpdatesViewModel : ViewModelBase
 
     [ObservableProperty]
     private int _selectedUpdateCount;
+    
+    public bool HasNoUpdates => !IsLoading && AvailableUpdates.Count == 0;
+    public bool HasUpdates => !IsLoading && AvailableUpdates.Count > 0;
 
     public UpdatesViewModel(IServiceProvider services) : base(services)
     {
@@ -51,10 +55,14 @@ public partial class UpdatesViewModel : ViewModelBase
             foreach (var update in updates.Where(u => !string.IsNullOrEmpty(u.Available)))
             {
                 AvailableUpdates.Add(update);
+                // Subscribe to selection changes for real-time count updates
+                update.PropertyChanged += OnPackagePropertyChanged;
             }
 
             StatusMessage = $"Found {AvailableUpdates.Count} available updates";
             LastChecked = DateTime.Now.ToString("MMM dd, yyyy 'at' h:mm tt");
+            OnPropertyChanged(nameof(HasNoUpdates));
+            OnPropertyChanged(nameof(HasUpdates));
         }
         catch (Exception ex)
         {
@@ -63,6 +71,8 @@ public partial class UpdatesViewModel : ViewModelBase
         finally
         {
             IsLoading = false;
+            OnPropertyChanged(nameof(HasNoUpdates));
+            OnPropertyChanged(nameof(HasUpdates));
         }
     }
 
@@ -132,6 +142,7 @@ public partial class UpdatesViewModel : ViewModelBase
                     if (result.Success)
                     {
                         successCount++;
+                        package.PropertyChanged -= OnPackagePropertyChanged;
                         AvailableUpdates.Remove(package);
                     }
                     else
@@ -149,6 +160,8 @@ public partial class UpdatesViewModel : ViewModelBase
 
             StatusMessage = $"Update complete: {successCount} successful, {failureCount} failed";
             SelectedUpdateCount = AvailableUpdates.Count(app => app.IsSelected);
+            OnPropertyChanged(nameof(HasNoUpdates));
+            OnPropertyChanged(nameof(HasUpdates));
         }
         catch (Exception ex)
         {
@@ -186,6 +199,15 @@ public partial class UpdatesViewModel : ViewModelBase
         SelectedUpdateCount = AvailableUpdates.Count(app => app.IsSelected);
     }
 
+    private void OnPackagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(UpgradableApp.IsSelected))
+        {
+            UpdateSelectedCount();
+        }
+    }
+
+    [RelayCommand]
     public async Task UpdateSinglePackageAsync(UpgradableApp package)
     {
         if (package == null) return;
@@ -200,7 +222,10 @@ public partial class UpdatesViewModel : ViewModelBase
             if (result.Success)
             {
                 StatusMessage = $"{package.Name} updated successfully";
+                package.PropertyChanged -= OnPackagePropertyChanged;
                 AvailableUpdates.Remove(package);
+                OnPropertyChanged(nameof(HasNoUpdates));
+                OnPropertyChanged(nameof(HasUpdates));
             }
             else
             {

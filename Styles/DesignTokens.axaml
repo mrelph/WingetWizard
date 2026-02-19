@@ -18,6 +18,7 @@
     <FontWeight x:Key="FontWeight.Light">Light</FontWeight>
     <FontWeight x:Key="FontWeight.Regular">Normal</FontWeight>
     <FontWeight x:Key="FontWeight.Medium">Medium</FontWeight>
+    <FontWeight x:Key="FontWeight.Semibold">SemiBold</FontWeight>
     <FontWeight x:Key="FontWeight.Bold">Bold</FontWeight>
     
     <!-- Spacing Scale -->

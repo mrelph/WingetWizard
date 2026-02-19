@@ -25,22 +25,43 @@ namespace WingetWizard.Avalonia.Services
             if (string.IsNullOrWhiteSpace(command)) 
                 return "Command is null or empty";
             
-            var validCommands = new[] { "winget list", "winget upgrade", "winget install", "winget uninstall", "winget repair" };
+            var validCommands = new[] { "winget list", "winget upgrade", "winget install", "winget uninstall", "winget repair", "winget search", "winget show" };
             if (!validCommands.Any(cmd => command.TrimStart().StartsWith(cmd, StringComparison.OrdinalIgnoreCase)))
                 return "Invalid command format";
             
-            var psi = new ProcessStartInfo 
-            { 
-                FileName = "powershell.exe", 
-                RedirectStandardOutput = true, 
-                UseShellExecute = false, 
-                CreateNoWindow = true 
-            };
-            psi.ArgumentList.Add("-Command"); 
-            psi.ArgumentList.Add(command);
-            
-            using var process = Process.Start(psi);
-            return process?.StandardOutput.ReadToEnd() ?? "Process failed";
+            try
+            {
+                var psi = new ProcessStartInfo 
+                { 
+                    FileName = "powershell.exe", 
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false, 
+                    CreateNoWindow = true 
+                };
+                psi.ArgumentList.Add("-Command"); 
+                psi.ArgumentList.Add(command);
+                
+                using var process = Process.Start(psi);
+                if (process == null)
+                    return "Failed to start process";
+
+                var output = process.StandardOutput.ReadToEnd();
+                var error = process.StandardError.ReadToEnd();
+                
+                process.WaitForExit();
+
+                if (!string.IsNullOrEmpty(error))
+                {
+                    output += "\nERROR: " + error;
+                }
+
+                return output;
+            }
+            catch (Exception ex)
+            {
+                return $"Exception occurred: {ex.Message}";
+            }
         }
 
         /// <summary>
@@ -53,45 +74,53 @@ namespace WingetWizard.Avalonia.Services
         {
             return await Task.Run(() =>
             {
-                var sourceParam = source == "all" ? "" : $"--source {source}";
-                var command = $"winget list {sourceParam}{(verbose ? " --verbose" : "")}";
-                
-                var output = RunPowerShell(command);
-                var lines = output?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
-                var apps = new List<UpgradableApp>();
-                bool headerFound = false;
-                
-                foreach (var line in lines)
+                try
                 {
-                    if (!headerFound)
+                    var sourceParam = source == "all" ? "" : $"--source {source}";
+                    var command = $"winget list {sourceParam}{(verbose ? " --verbose" : "")}";
+                    
+                    var output = RunPowerShell(command);
+                    var lines = output?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+                    var apps = new List<UpgradableApp>();
+                    bool headerFound = false;
+                    
+                    foreach (var line in lines)
                     {
-                        if (line.Trim().StartsWith("Name") && line.Contains("Id") && line.Contains("Version"))
+                        if (!headerFound)
                         {
-                            headerFound = true;
+                            if (line.Trim().StartsWith("Name") && line.Contains("Id") && line.Contains("Version"))
+                            {
+                                headerFound = true;
+                            }
+                            continue;
                         }
-                        continue;
+                        
+                        if (line.Trim().Length == 0 || line.StartsWith("-")) 
+                            continue;
+
+                        var parts = Regex.Split(line.Trim(), @"\s{2,}");
+                        if (parts.Length >= 3)
+                        {
+                            var app = new UpgradableApp
+                            {
+                                Name = parts[0],
+                                Id = parts[1],
+                                Version = parts[2],
+                                Available = "",
+                                Status = "Installed",
+                                Recommendation = ""
+                            };
+                            apps.Add(app);
+                        }
                     }
                     
-                    if (line.Trim().Length == 0 || line.StartsWith("-")) 
-                        continue;
-
-                    var parts = Regex.Split(line.Trim(), @"\s{2,}");
-                    if (parts.Length >= 3)
-                    {
-                        var app = new UpgradableApp
-                        {
-                            Name = parts[0],
-                            Id = parts[1],
-                            Version = parts[2],
-                            Available = "",
-                            Status = "",
-                            Recommendation = ""
-                        };
-                        apps.Add(app);
-                    }
+                    return apps;
                 }
-                
-                return apps;
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error listing apps: {ex.Message}");
+                    return new List<UpgradableApp>();
+                }
             });
         }
 
@@ -105,60 +134,97 @@ namespace WingetWizard.Avalonia.Services
         {
             return await Task.Run(() =>
             {
-                var sourceParam = source == "all" ? "" : $"--source {source}";
-                var command = $"winget upgrade {sourceParam}{(verbose ? " --verbose" : "")}";
-                
-                var output = RunPowerShell(command);
-                var lines = output?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
-                var apps = new List<UpgradableApp>();
-                bool headerFound = false;
-                
-                foreach (var line in lines)
+                try
                 {
-                    if (!headerFound)
+                    var sourceParam = source == "all" ? "" : $"--source {source}";
+                    var command = $"winget upgrade {sourceParam}{(verbose ? " --verbose" : "")}";
+                    
+                    var output = RunPowerShell(command);
+                    var lines = output?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+                    var apps = new List<UpgradableApp>();
+                    bool headerFound = false;
+                    
+                    foreach (var line in lines)
                     {
-                        if (line.Trim().StartsWith("Name") && line.Contains("Id") && line.Contains("Version"))
+                        if (!headerFound)
                         {
-                            headerFound = true;
+                            if (line.Trim().StartsWith("Name") && line.Contains("Id") && line.Contains("Version"))
+                            {
+                                headerFound = true;
+                            }
+                            continue;
                         }
-                        continue;
+                        
+                        if (line.Trim().Length == 0 || line.StartsWith("-")) 
+                            continue;
+
+                        var parts = Regex.Split(line.Trim(), @"\s{2,}");
+                        if (parts.Length >= 4)
+                        {
+                            var name = parts[0];
+                            var id = parts[1];
+                            var currentVer = parts[2];
+                            var availableVer = parts[3];
+                            
+                            // Skip if available version looks like a source name
+                            if (availableVer.ToLower().Contains("winget") || availableVer.ToLower().Contains("msstore"))
+                            {
+                                if (parts.Length > 4) 
+                                    availableVer = parts[4];
+                                else 
+                                    continue; // Skip this entry if we can't find proper version
+                            }
+                            
+                            var app = new UpgradableApp
+                            {
+                                Name = name,
+                                Id = id,
+                                Version = currentVer,
+                                Available = availableVer,
+                                Status = "Update Available",
+                                Recommendation = DetermineUpdateRecommendation(name, currentVer, availableVer)
+                            };
+                            apps.Add(app);
+                        }
                     }
                     
-                    if (line.Trim().Length == 0 || line.StartsWith("-")) 
-                        continue;
-
-                    var parts = Regex.Split(line.Trim(), @"\s{2,}");
-                    if (parts.Length >= 4)
-                    {
-                        var name = parts[0];
-                        var id = parts[1];
-                        var currentVer = parts[2];
-                        var availableVer = parts[3];
-                        
-                        // Skip if available version looks like a source name
-                        if (availableVer.ToLower().Contains("winget") || availableVer.ToLower().Contains("msstore"))
-                        {
-                            if (parts.Length > 4) 
-                                availableVer = parts[4];
-                            else 
-                                continue; // Skip this entry if we can't find proper version
-                        }
-                        
-                        var app = new UpgradableApp
-                        {
-                            Name = name,
-                            Id = id,
-                            Version = currentVer,
-                            Available = availableVer,
-                            Status = "",
-                            Recommendation = ""
-                        };
-                        apps.Add(app);
-                    }
+                    return apps;
                 }
-                
-                return apps;
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error checking updates: {ex.Message}");
+                    return new List<UpgradableApp>();
+                }
             });
+        }
+
+        /// <summary>
+        /// Determines update recommendation based on package name and version
+        /// </summary>
+        private string DetermineUpdateRecommendation(string name, string currentVersion, string availableVersion)
+        {
+            // Critical security packages
+            var securityPackages = new[] { "git", "nodejs", "python", "openssl", "curl", "firefox", "chrome" };
+            if (securityPackages.Any(pkg => name.ToLower().Contains(pkg)))
+            {
+                return "🔒 Security Update - Recommended";
+            }
+
+            // Development tools
+            var devTools = new[] { "visual studio", "vscode", "docker", "postman", "notepad++", "jetbrains" };
+            if (devTools.Any(tool => name.ToLower().Contains(tool)))
+            {
+                return "🛠️ Development Tool - Update Available";
+            }
+
+            // System utilities
+            var systemUtils = new[] { "7zip", "vlc", "adobe", "microsoft", "windows" };
+            if (systemUtils.Any(util => name.ToLower().Contains(util)))
+            {
+                return "⚙️ System Utility - Safe to Update";
+            }
+
+            return "📦 Update Available";
         }
 
         /// <summary>
@@ -171,11 +237,20 @@ namespace WingetWizard.Avalonia.Services
         {
             return await Task.Run(() =>
             {
-                var command = $"winget upgrade --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{(verbose ? " --verbose" : "")}";
-                var result = RunPowerShell(command);
-                var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase);
-                
-                return (success, result);
+                try
+                {
+                    var command = $"winget upgrade --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{(verbose ? " --verbose" : "")}";
+                    var result = RunPowerShell(command);
+                    var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && 
+                                 !result.Contains("failed", StringComparison.OrdinalIgnoreCase) &&
+                                 !result.Contains("ERROR:", StringComparison.OrdinalIgnoreCase);
+                    
+                    return (success, result);
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Exception during upgrade: {ex.Message}");
+                }
             });
         }
 
@@ -188,12 +263,21 @@ namespace WingetWizard.Avalonia.Services
         {
             return await Task.Run(() =>
             {
-                var verboseParam = verbose ? " --verbose" : "";
-                var command = $"winget upgrade --all --accept-source-agreements --accept-package-agreements --silent{verboseParam}";
-                var result = RunPowerShell(command);
-                var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase);
-                
-                return (success, result);
+                try
+                {
+                    var verboseParam = verbose ? " --verbose" : "";
+                    var command = $"winget upgrade --all --accept-source-agreements --accept-package-agreements --silent{verboseParam}";
+                    var result = RunPowerShell(command);
+                    var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && 
+                                 !result.Contains("failed", StringComparison.OrdinalIgnoreCase) &&
+                                 !result.Contains("ERROR:", StringComparison.OrdinalIgnoreCase);
+                    
+                    return (success, result);
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Exception during upgrade all: {ex.Message}");
+                }
             });
         }
 
@@ -207,11 +291,20 @@ namespace WingetWizard.Avalonia.Services
         {
             return await Task.Run(() =>
             {
-                var command = $"winget install --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{(verbose ? " --verbose" : "")}";
-                var result = RunPowerShell(command);
-                var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase);
-                
-                return (success, result);
+                try
+                {
+                    var command = $"winget install --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{(verbose ? " --verbose" : "")}";
+                    var result = RunPowerShell(command);
+                    var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && 
+                                 !result.Contains("failed", StringComparison.OrdinalIgnoreCase) &&
+                                 !result.Contains("ERROR:", StringComparison.OrdinalIgnoreCase);
+                    
+                    return (success, result);
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Exception during installation: {ex.Message}");
+                }
             });
         }
 
@@ -225,11 +318,20 @@ namespace WingetWizard.Avalonia.Services
         {
             return await Task.Run(() =>
             {
-                var command = $"winget uninstall --id \"{packageId}\" --silent{(verbose ? " --verbose" : "")}";
-                var result = RunPowerShell(command);
-                var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase);
-                
-                return (success, result);
+                try
+                {
+                    var command = $"winget uninstall --id \"{packageId}\" --silent{(verbose ? " --verbose" : "")}";
+                    var result = RunPowerShell(command);
+                    var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && 
+                                 !result.Contains("failed", StringComparison.OrdinalIgnoreCase) &&
+                                 !result.Contains("ERROR:", StringComparison.OrdinalIgnoreCase);
+                    
+                    return (success, result);
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Exception during uninstallation: {ex.Message}");
+                }
             });
         }
 
@@ -243,11 +345,20 @@ namespace WingetWizard.Avalonia.Services
         {
             return await Task.Run(() =>
             {
-                var command = $"winget repair --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{(verbose ? " --verbose" : "")}";
-                var result = RunPowerShell(command);
-                var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase);
-                
-                return (success, result);
+                try
+                {
+                    var command = $"winget repair --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{(verbose ? " --verbose" : "")}";
+                    var result = RunPowerShell(command);
+                    var success = !result.Contains("error", StringComparison.OrdinalIgnoreCase) && 
+                                 !result.Contains("failed", StringComparison.OrdinalIgnoreCase) &&
+                                 !result.Contains("ERROR:", StringComparison.OrdinalIgnoreCase);
+                    
+                    return (success, result);
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Exception during repair: {ex.Message}");
+                }
             });
         }
 
@@ -294,46 +405,54 @@ namespace WingetWizard.Avalonia.Services
         {
             return await Task.Run(() =>
             {
-                var arguments = new List<string>
+                try
                 {
-                    "-q", query,
-                    "--accept-source-agreements"
-                };
+                    var arguments = new List<string>
+                    {
+                        "-q", query,
+                        "--accept-source-agreements"
+                    };
 
-                if (!string.IsNullOrWhiteSpace(source))
-                {
-                    arguments.Add("--source");
-                    arguments.Add(source);
-                }
+                    if (!string.IsNullOrWhiteSpace(source))
+                    {
+                        arguments.Add("--source");
+                        arguments.Add(source);
+                    }
 
-                if (count > 0 && count <= 1000)
-                {
-                    arguments.Add("--count");
-                    arguments.Add(count.ToString());
-                }
+                    if (count > 0 && count <= 1000)
+                    {
+                        arguments.Add("--count");
+                        arguments.Add(count.ToString());
+                    }
 
-                if (exact)
-                {
-                    arguments.Add("--exact");
-                }
+                    if (exact)
+                    {
+                        arguments.Add("--exact");
+                    }
 
-                if (verbose)
-                {
-                    arguments.Add("--verbose");
+                    if (verbose)
+                    {
+                        arguments.Add("--verbose");
+                    }
+                    
+                    var command = $"winget search {string.Join(" ", arguments)}";
+                    var result = RunPowerShell(command);
+                    
+                    if (string.IsNullOrEmpty(result) || result.Contains("error", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new List<PackageSearchResult>();
+                    }
+
+                    var cleanedOutput = CleanWingetOutput(result);
+                    var results = ParseWingetSearchOutput(cleanedOutput);
+                    
+                    return results;
                 }
-                
-                var command = $"winget search {string.Join(" ", arguments)}";
-                var result = RunPowerShell(command);
-                
-                if (string.IsNullOrEmpty(result) || result.Contains("error", StringComparison.OrdinalIgnoreCase))
+                catch (Exception ex)
                 {
+                    System.Diagnostics.Debug.WriteLine($"Error searching packages: {ex.Message}");
                     return new List<PackageSearchResult>();
                 }
-
-                var cleanedOutput = CleanWingetOutput(result);
-                var results = ParseWingetSearchOutput(cleanedOutput);
-                
-                return results;
             });
         }
 
@@ -347,16 +466,24 @@ namespace WingetWizard.Avalonia.Services
         {
             return await Task.Run(() =>
             {
-                var verboseParam = verbose ? " --verbose" : "";
-                var command = $"winget show {packageId}{verboseParam}";
-                var result = RunPowerShell(command);
-                
-                if (string.IsNullOrEmpty(result) || result.Contains("error", StringComparison.OrdinalIgnoreCase))
+                try
                 {
+                    var verboseParam = verbose ? " --verbose" : "";
+                    var command = $"winget show {packageId}{verboseParam}";
+                    var result = RunPowerShell(command);
+                    
+                    if (string.IsNullOrEmpty(result) || result.Contains("error", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return null;
+                    }
+                    
+                    return PackageSearchResult.FromShowOutput(result);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error getting package details: {ex.Message}");
                     return null;
                 }
-                
-                return PackageSearchResult.FromShowOutput(result);
             });
         }
 
@@ -370,36 +497,112 @@ namespace WingetWizard.Avalonia.Services
         {
             return await Task.Run(() =>
             {
-                if (packageIds == null || packageIds.Count == 0)
+                try
                 {
-                    return (false, "No packages specified for installation");
-                }
-                
-                var verboseParam = verbose ? " --verbose" : "";
-                
-                // Install packages one by one for better error handling
-                var results = new List<string>();
-                var successCount = 0;
-                
-                foreach (var packageId in packageIds)
-                {
-                    var command = $"winget install --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{verboseParam}";
-                    var result = RunPowerShell(command);
+                    if (packageIds == null || packageIds.Count == 0)
+                    {
+                        return (false, "No packages specified for installation");
+                    }
                     
-                    if (!result.Contains("error", StringComparison.OrdinalIgnoreCase) && !result.Contains("failed", StringComparison.OrdinalIgnoreCase))
+                    var verboseParam = verbose ? " --verbose" : "";
+                    
+                    // Install packages one by one for better error handling
+                    var results = new List<string>();
+                    var successCount = 0;
+                    var failedCount = 0;
+                    
+                    foreach (var packageId in packageIds)
                     {
-                        successCount++;
-                        results.Add($"✅ {packageId}: Success");
+                        if (string.IsNullOrWhiteSpace(packageId))
+                        {
+                            failedCount++;
+                            results.Add($"❌ Invalid package ID: {packageId}");
+                            continue;
+                        }
+                        
+                        var command = $"winget install --id \"{packageId}\" --accept-source-agreements --accept-package-agreements --silent{verboseParam}";
+                        var result = RunPowerShell(command);
+                        
+                        // Check for successful installation indicators
+                        var successIndicators = new[] { 
+                            "successfully installed", 
+                            "install completed", 
+                            "installation succeeded",
+                            "✓"
+                        };
+                        
+                        var failureIndicators = new[] { 
+                            "error", 
+                            "failed", 
+                            "not found",
+                            "❌"
+                        };
+                        
+                        var isSuccess = successIndicators.Any(indicator => 
+                            result.Contains(indicator, StringComparison.OrdinalIgnoreCase));
+                        var isFailure = failureIndicators.Any(indicator => 
+                            result.Contains(indicator, StringComparison.OrdinalIgnoreCase));
+                        
+                        if (isSuccess && !isFailure)
+                        {
+                            successCount++;
+                            results.Add($"✅ {packageId}: Successfully installed");
+                        }
+                        else
+                        {
+                            failedCount++;
+                            var errorMessage = ExtractErrorMessage(result);
+                            results.Add($"❌ {packageId}: {errorMessage}");
+                        }
                     }
-                    else
+                    
+                    var summaryMessage = $"Installation completed. {successCount}/{packageIds.Count} packages installed successfully.";
+                    if (failedCount > 0)
                     {
-                        results.Add($"❌ {packageId}: {result}");
+                        summaryMessage += $"\n{failedCount} package(s) failed to install.";
                     }
+                    summaryMessage += $"\n\n{string.Join("\n", results)}";
+                    
+                    return (successCount > 0, summaryMessage);
                 }
-                
-                var message = $"Installation completed. {successCount}/{packageIds.Count} packages installed successfully.\n\n{string.Join("\n", results)}";
-                return (successCount > 0, message);
+                catch (Exception ex)
+                {
+                    return (false, $"Exception during multiple installation: {ex.Message}");
+                }
             });
+        }
+        
+        /// <summary>
+        /// Extracts a meaningful error message from winget output
+        /// </summary>
+        /// <param name="wingetOutput">Raw winget output</param>
+        /// <returns>Cleaned error message</returns>
+        private static string ExtractErrorMessage(string wingetOutput)
+        {
+            if (string.IsNullOrEmpty(wingetOutput))
+                return "No output received";
+                
+            // Look for common error patterns
+            var lines = wingetOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                if (trimmedLine.StartsWith("Error:") || 
+                    trimmedLine.StartsWith("Failed:") ||
+                    trimmedLine.Contains("not found") ||
+                    trimmedLine.Contains("error"))
+                {
+                    return trimmedLine.Replace("Error:", "").Replace("Failed:", "").Trim();
+                }
+            }
+            
+            // If no specific error found, return a cleaned version of the output
+            var cleaned = CleanWingetOutput(wingetOutput);
+            if (cleaned.Length > 100)
+                cleaned = cleaned.Substring(0, 100) + "...";
+                
+            return cleaned;
         }
 
         /// <summary>
@@ -523,6 +726,3 @@ namespace WingetWizard.Avalonia.Services
         }
     }
 }
-
-
-

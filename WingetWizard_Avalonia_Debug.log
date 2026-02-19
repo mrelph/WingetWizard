@@ -1,23 +1,17 @@
-[23:04:21.920] === AVALONIA PROGRAM MAIN START ===
-[23:04:21.932] .NET Version: 6.0.36
-[23:04:21.934] OS: Unix 5.15.153.1
-[23:04:21.935] Working Dir: /mnt/c/Users/mrelp/Coding Projects/WinGetModern
-[23:04:21.936] Args: []
-[23:04:21.937] Building Avalonia AppBuilder...
-[23:04:21.956] AppBuilder created successfully
-[23:04:21.957] Starting with ClassicDesktopLifetime...
-[23:04:22.853] === AVALONIA APP INITIALIZE ===
-[23:04:22.968] Services configured successfully
-[23:04:22.970] Avalonia app initialized successfully
-[23:04:22.972] Framework initialization completed
-[23:04:22.974] Creating MainWindow...
-[23:04:22.981] MainViewModel created successfully
-[23:04:23.195] Error loading DashboardPage: Unable to resolve service for type 'System.String' while attempting to activate 'WingetWizard.Avalonia.Services.ReportService'.
-[23:04:23.196] MainWindow constructor completed successfully with Dashboard
-[23:04:23.198] MainWindow created successfully
-[23:04:23.199] App startup completed!
-[23:04:26.917] Error loading PackagesPage: No animator registered for the property RenderTransform. Add an animator to the Animation.Animators collection that matches this property to animate it.
-[23:04:26.918] Enhanced Navigation: PackagesBtn
-[23:04:27.827] Error loading UpdatesPage: No animator registered for the property RenderTransform. Add an animator to the Animation.Animators collection that matches this property to animate it.
-[23:04:27.828] Enhanced Navigation: UpdatesBtn
-[23:04:30.531] Avalonia app completed normally
+[11:51:47.390] === AVALONIA PROGRAM MAIN START ===
+[11:51:47.400] .NET Version: 6.0.36
+[11:51:47.402] OS: Unix 5.15.153.1
+[11:51:47.403] Working Dir: /mnt/c/Users/mrelp/Coding Projects/WinGetModern
+[11:51:47.404] Args: []
+[11:51:47.405] Building Avalonia AppBuilder...
+[11:51:47.427] AppBuilder created successfully
+[11:51:47.428] Starting with ClassicDesktopLifetime...
+[11:51:47.839] === AVALONIA APP INITIALIZE ===
+[11:51:47.941] Services configured successfully
+[11:51:47.942] Avalonia app initialized successfully
+[11:51:47.944] Framework initialization completed
+[11:51:47.946] Creating MainWindow...
+[11:51:47.953] MainViewModel created successfully
+[11:51:48.161] MainWindow constructor completed successfully with Dashboard
+[11:51:48.163] MainWindow created successfully
+[11:51:48.164] App startup completed!

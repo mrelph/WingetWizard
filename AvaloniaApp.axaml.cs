@@ -120,6 +120,7 @@ public partial class App : Application
             new DashboardViewModel(
                 provider.GetRequiredService<IPackageService>(),
                 provider.GetRequiredService<IReportService>(),
+                provider.GetRequiredService<IAIService>(),
                 provider));
         services.AddTransient<PackagesViewModel>(provider => new PackagesViewModel(provider));
         services.AddTransient<UpdatesViewModel>(provider => new UpdatesViewModel(provider));

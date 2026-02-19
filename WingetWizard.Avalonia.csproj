@@ -35,26 +35,11 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
-    <PackageReference Include="System.Text.Json" Version="6.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Logo.ico" />
-  </ItemGroup>
-
-  <!-- Exclude WinUI 3 and Windows Forms files -->
-  <ItemGroup>
-    <Compile Remove="App.xaml.cs" />
-    <Compile Remove="MainWindow.xaml.cs" />
-    <Compile Remove="Program.cs" />
-    <Compile Remove="MainForm.cs" />
-    <Compile Remove="UI\SpinningProgressForm.cs" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <None Remove="App.xaml" />
-    <None Remove="MainWindow.xaml" />
-    <None Remove="Views\*.xaml" />
   </ItemGroup>
 
 </Project>

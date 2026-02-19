@@ -174,6 +174,240 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+            
+            <!-- Phase 3: AI Insights Section -->
+            <Grid ColumnDefinitions="1*,1*" ColumnSpacing="{StaticResource Spacing.Medium}">
+                
+                <!-- AI Recommendations -->
+                <Border Grid.Column="0" Classes="card-theme">
+                    <StackPanel Spacing="{StaticResource Spacing.Medium}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="heading-2" Text="🤖 AI Recommendations"/>
+                                <TextBlock Classes="body-2" 
+                                          Text="{Binding AiStatus}"
+                                          Foreground="{StaticResource Text.Secondary}"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" 
+                                   Classes="secondary-button"
+                                   Command="{Binding LoadAIRecommendationsCommand}"
+                                   IsEnabled="{Binding !IsLoadingAIRecommendations}"
+                                   Padding="12,6">
+                                <TextBlock Text="Refresh"/>
+                            </Button>
+                        </Grid>
+                        
+                        <!-- Loading Indicator -->
+                        <StackPanel IsVisible="{Binding IsLoadingAIRecommendations}"
+                                   Spacing="{StaticResource Spacing.Small}"
+                                   HorizontalAlignment="Center"
+                                   Margin="{StaticResource Space.Medium}">
+                            <TextBlock Text="🔄" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Classes="body-2" Text="Analyzing your packages..." 
+                                      HorizontalAlignment="Center"/>
+                        </StackPanel>
+                        
+                        <!-- AI Recommendations List -->
+                        <ItemsControl ItemsSource="{Binding AiRecommendations}"
+                                     IsVisible="{Binding !IsLoadingAIRecommendations}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="card-theme" 
+                                           Background="{StaticResource Surface.Secondary}"
+                                           Margin="0,0,0,8">
+                                        <StackPanel Spacing="{StaticResource Spacing.Small}">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" 
+                                                          Classes="heading-3" 
+                                                          Text="{Binding Title}"/>
+                                                <Border Grid.Column="1" 
+                                                       Classes="badge"
+                                                       Background="{StaticResource Warning.100}"
+                                                       Padding="6,2">
+                                                    <TextBlock Classes="caption" 
+                                                              Text="{Binding Priority}"
+                                                              Foreground="{StaticResource Warning.700}"/>
+                                                </Border>
+                                            </Grid>
+                                            <TextBlock Classes="body-2" 
+                                                      Text="{Binding Description}"
+                                                      TextWrapping="Wrap"/>
+                                            <TextBlock Classes="caption" 
+                                                      Text="{Binding Reasoning}"
+                                                      Foreground="{StaticResource Text.Tertiary}"
+                                                      TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        
+                        <!-- Empty State -->
+                        <StackPanel IsVisible="{Binding AiRecommendations.Count, Converter={StaticResource EqualToZeroConverter}}"
+                                   Spacing="{StaticResource Spacing.Small}"
+                                   HorizontalAlignment="Center"
+                                   Margin="{StaticResource Space.Medium}">
+                            <TextBlock Text="🎯" FontSize="48" HorizontalAlignment="Center" Opacity="0.7"/>
+                            <TextBlock Classes="body-2" Text="No AI recommendations available" 
+                                      HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Maintenance Recommendations -->
+                <Border Grid.Column="1" Classes="card-theme">
+                    <StackPanel Spacing="{StaticResource Spacing.Medium}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="heading-2" Text="🔧 Maintenance"/>
+                                <TextBlock Classes="body-2" 
+                                          Foreground="{StaticResource Text.Secondary}">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}{0} high priority, {1} security">
+                                            <Binding Path="HighPriorityCount"/>
+                                            <Binding Path="SecurityIssuesCount"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                            <Button Grid.Column="1" 
+                                   Classes="secondary-button"
+                                   Command="{Binding LoadMaintenanceRecommendationsCommand}"
+                                   IsEnabled="{Binding !IsLoadingMaintenance}"
+                                   Padding="12,6">
+                                <TextBlock Text="Scan"/>
+                            </Button>
+                        </Grid>
+                        
+                        <!-- Loading Indicator -->
+                        <StackPanel IsVisible="{Binding IsLoadingMaintenance}"
+                                   Spacing="{StaticResource Spacing.Small}"
+                                   HorizontalAlignment="Center"
+                                   Margin="{StaticResource Space.Medium}">
+                            <TextBlock Text="⚡" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Classes="body-2" Text="Analyzing system health..." 
+                                      HorizontalAlignment="Center"/>
+                        </StackPanel>
+                        
+                        <!-- Maintenance Recommendations List -->
+                        <ItemsControl ItemsSource="{Binding MaintenanceRecommendations}"
+                                     IsVisible="{Binding !IsLoadingMaintenance}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="card-theme" 
+                                           Background="{StaticResource Surface.Secondary}"
+                                           Margin="0,0,0,8">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <TextBlock Grid.Column="0" 
+                                                      Text="🔧" 
+                                                      FontSize="16" 
+                                                      VerticalAlignment="Center" 
+                                                      Margin="0,0,8,0"/>
+                                            <StackPanel Grid.Column="1" 
+                                                       Spacing="{StaticResource Spacing.XSmall}">
+                                                <TextBlock Classes="body-1" 
+                                                          Text="{Binding Title}"/>
+                                                <TextBlock Classes="caption" 
+                                                          Text="{Binding Description}"
+                                                          TextWrapping="Wrap"
+                                                          Foreground="{StaticResource Text.Secondary}"/>
+                                            </StackPanel>
+                                            <Border Grid.Column="2" 
+                                                   Classes="badge"
+                                                   Background="{StaticResource Error.100}"
+                                                   Padding="4,2">
+                                                <TextBlock Classes="caption" 
+                                                          Text="{Binding Priority}"
+                                                          Foreground="{StaticResource Error.700}"/>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+            
+            <!-- Phase 3: System Health Report -->
+            <Border Classes="card-theme" IsVisible="{Binding SystemHealthReport, Converter={StaticResource NotNullConverter}}">
+                <StackPanel Spacing="{StaticResource Spacing.Medium}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Classes="heading-2" Text="📊 System Health Report"/>
+                            <TextBlock Classes="body-2" 
+                                      Text="{Binding SystemHealthReport.GeneratedAt, StringFormat='Generated: {0:MMM dd, yyyy \'at\' h:mm tt}'}"
+                                      Foreground="{StaticResource Text.Secondary}"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" 
+                               Classes="primary-button"
+                               Command="{Binding RunComprehensiveAnalysisCommand}"
+                               Padding="12,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="🔍"/>
+                                <TextBlock Text="Full Analysis"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    
+                    <!-- Health Score -->
+                    <Border Classes="card-theme" 
+                           Background="{StaticResource Success.50}" 
+                           BorderBrush="{StaticResource Success.200}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                            <TextBlock Grid.Column="0" 
+                                      Text="💚" 
+                                      FontSize="24" 
+                                      VerticalAlignment="Center" 
+                                      Margin="0,0,12,0"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Classes="heading-3" Text="System Health"/>
+                                <TextBlock Classes="body-2" 
+                                          Text="{Binding SystemHealthReport.OverallScore, StringFormat='Overall Score: {0}'}"
+                                          Foreground="{StaticResource Text.Secondary}"/>
+                            </StackPanel>
+                            
+                            <!-- Quick Stats -->
+                            <Border Grid.Column="2" Classes="stat-card" Margin="8,0">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Classes="body-1" 
+                                              Text="{Binding SystemHealthReport.TotalPackages}" 
+                                              HorizontalAlignment="Center"/>
+                                    <TextBlock Classes="caption" 
+                                              Text="Total" 
+                                              Foreground="{StaticResource Text.Secondary}"
+                                              HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <Border Grid.Column="3" Classes="stat-card" Margin="8,0">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Classes="body-1" 
+                                              Text="{Binding SystemHealthReport.OutdatedPackages}" 
+                                              HorizontalAlignment="Center"/>
+                                    <TextBlock Classes="caption" 
+                                              Text="Outdated" 
+                                              Foreground="{StaticResource Text.Secondary}"
+                                              HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <Border Grid.Column="4" Classes="stat-card" Margin="8,0">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Classes="body-1" 
+                                              Text="{Binding SystemHealthReport.UnusedPackages}" 
+                                              HorizontalAlignment="Center"/>
+                                    <TextBlock Classes="caption" 
+                                              Text="Unused" 
+                                              Foreground="{StaticResource Text.Secondary}"
+                                              HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+            
         </StackPanel>
     </ScrollViewer>
 </UserControl>

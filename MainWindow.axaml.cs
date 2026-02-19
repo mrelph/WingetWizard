@@ -109,6 +109,9 @@ public partial class MainWindow : Window
                 var packagesViewModel = App.Services.GetRequiredService<PackagesViewModel>();
                 packagesPage.DataContext = packagesViewModel;
                 mainContentControl.Content = packagesPage;
+                
+                // Load packages data automatically
+                _ = packagesViewModel.LoadPackagesCommand.ExecuteAsync(null);
             }
         }
         catch (Exception ex)
@@ -134,6 +137,9 @@ public partial class MainWindow : Window
                 var updatesViewModel = App.Services.GetRequiredService<UpdatesViewModel>();
                 updatesPage.DataContext = updatesViewModel;
                 mainContentControl.Content = updatesPage;
+                
+                // Load updates data automatically
+                _ = updatesViewModel.CheckForUpdatesCommand.ExecuteAsync(null);
             }
         }
         catch (Exception ex)

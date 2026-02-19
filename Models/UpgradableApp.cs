@@ -6,6 +6,16 @@ using System.Runtime.CompilerServices;
 namespace WingetWizard.Avalonia.Models
 {
     /// <summary>
+    /// Represents an AI-generated insight about a package
+    /// </summary>
+    public class AIInsight
+    {
+        public string Type { get; set; } = string.Empty; // "security", "performance", "compatibility", etc.
+        public string Message { get; set; } = string.Empty;
+        public string Severity { get; set; } = "info"; // "info", "warning", "error", "success"
+    }
+
+    /// <summary>
     /// Data model representing a Windows package that can be upgraded
     /// Contains package metadata and AI recommendation information
     /// </summary>
@@ -18,6 +28,7 @@ namespace WingetWizard.Avalonia.Models
         public string AvailableVersion => Available;             // Alias for XAML binding compatibility
         public string Status { get; set; } = string.Empty;        // Installation/upgrade status
         public string Recommendation { get; set; } = string.Empty;// AI-generated recommendation
+        public string Description { get; set; } = string.Empty;   // Package description
 
         /// <summary>
         /// Whether this package is selected for batch operations
@@ -28,6 +39,39 @@ namespace WingetWizard.Avalonia.Models
             set => SetProperty(ref _isSelected, value); 
         }
         private bool _isSelected;
+
+        /// <summary>
+        /// Whether this package has AI insights available
+        /// </summary>
+        public bool HasAIInsights
+        {
+            get => _hasAIInsights;
+            set => SetProperty(ref _hasAIInsights, value);
+        }
+        private bool _hasAIInsights;
+
+        /// <summary>
+        /// Collection of AI insights for this package
+        /// </summary>
+        public List<AIInsight> AIInsights { get; set; } = new();
+
+        /// <summary>
+        /// Whether AI insights panel is expanded
+        /// </summary>
+        public bool IsAIInsightsExpanded
+        {
+            get => _isAIInsightsExpanded;
+            set => SetProperty(ref _isAIInsightsExpanded, value);
+        }
+        private bool _isAIInsightsExpanded;
+
+        /// <summary>
+        /// Toggles the AI insights panel expansion state
+        /// </summary>
+        public void ToggleAIInsights()
+        {
+            IsAIInsightsExpanded = !IsAIInsightsExpanded;
+        }
 
         public override string ToString()
         {

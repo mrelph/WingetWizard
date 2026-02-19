@@ -49,7 +49,7 @@
                    CornerRadius="{StaticResource Radius.Large}"
                    Padding="{StaticResource Space.Large}"
                    Margin="0,0,16,0"
-                   Effect="{StaticResource Shadow.Small}">
+>
                 <StackPanel Spacing="{StaticResource Spacing.Large}">
                     
                     <!-- Logo Section -->
@@ -131,7 +131,7 @@
             <Border Grid.Column="1" 
                    Background="{StaticResource Surface.Primary.Brush}" 
                    CornerRadius="{StaticResource Radius.Large}"
-                   Effect="{StaticResource Shadow.Small}">
+>
                 <ContentControl Name="MainContentControl">
                     <!-- Default content will be Dashboard -->
                 </ContentControl>

@@ -45,6 +45,31 @@ namespace WingetWizard.Avalonia.Models
         public string Category { get; set; } = string.Empty;
 
         /// <summary>
+        /// Recommendation title for display
+        /// </summary>
+        public string Title { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Detailed description of the recommendation
+        /// </summary>
+        public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Priority level (High, Medium, Low)
+        /// </summary>
+        public string Priority { get; set; } = "Medium";
+
+        /// <summary>
+        /// List of recommended packages
+        /// </summary>
+        public List<string> RecommendedPackages { get; set; } = new();
+
+        /// <summary>
+        /// Reasoning behind the recommendation
+        /// </summary>
+        public string Reasoning { get; set; } = string.Empty;
+
+        /// <summary>
         /// Whether this recommendation has been dismissed
         /// </summary>
         public bool IsDismissed 

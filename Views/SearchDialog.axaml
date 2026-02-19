@@ -276,7 +276,7 @@
         <Border Name="LoadingOverlay" 
                Grid.RowSpan="3"
                Background="#80000000"
-               IsVisible="{Binding IsSearching}"
+               IsVisible="{Binding IsSearching, FallbackValue=False}"
                ZIndex="1000">
             <Grid>
                 <Border Background="#1E293B"
@@ -296,7 +296,7 @@
                                Margin="0,0,0,16"/>
                         
                         <TextBlock Name="LoadingText"
-                                  Text="Searching packages..."
+                                  Text="{Binding StatusMessage, FallbackValue='Processing...'}"
                                   FontSize="16"
                                   FontWeight="SemiBold"
                                   Foreground="White"
@@ -304,7 +304,48 @@
                                   Margin="0,0,0,8"/>
                                   
                         <TextBlock Name="LoadingSubtext"
-                                  Text="Please wait while we search for packages"
+                                  Text="{Binding InstallationProgress, FallbackValue='Please wait...'}"
+                                  FontSize="12"
+                                  Foreground="#94A3B8"
+                                  HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+        
+        <!-- Installation Progress Overlay -->
+        <Border Name="InstallationOverlay" 
+               Grid.RowSpan="3"
+               Background="#80000000"
+               IsVisible="{Binding IsInstalling}"
+               ZIndex="1000">
+            <Grid>
+                <Border Background="#1E293B"
+                       CornerRadius="12"
+                       Padding="40"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       MaxWidth="300">
+                    <StackPanel HorizontalAlignment="Center">
+                        <!-- Installation Spinner -->
+                        <Border Name="InstallSpinner"
+                               Width="48"
+                               Height="48"
+                               CornerRadius="24"
+                               BorderThickness="4"
+                               BorderBrush="#10B981"
+                               Margin="0,0,0,16"/>
+                        
+                        <TextBlock Name="InstallText"
+                                  Text="{Binding StatusMessage, FallbackValue='Installing packages...'}"
+                                  FontSize="16"
+                                  FontWeight="SemiBold"
+                                  Foreground="White"
+                                  HorizontalAlignment="Center"
+                                  Margin="0,0,0,8"/>
+                                  
+                        <TextBlock Name="InstallSubtext"
+                                  Text="{Binding InstallationProgress, FallbackValue='Please wait...'}"
                                   FontSize="12"
                                   Foreground="#94A3B8"
                                   HorizontalAlignment="Center"/>
