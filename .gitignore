@@ -123,3 +123,6 @@ dist/*.rpm
 
 # Allow distribution source folders
 !dist/*/
+# Build output (regenerable)
+dist/
+publish/
